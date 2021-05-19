@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="Siddhi-Map-P4Trpt-Test-Suite">
+    <test name="Siddhi-map-p4-trpt-tests" enabled="true" preserve-order="true" parallel="false">
+        <classes>
+            <class name="io.siddhi.extension.map.p4.trpt.sinkmapper.TestCaseOfP4TrptSinkMapper"/>
+            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.TelemetryReportByteParsingTests"/>
+        </classes>
+    </test>
+</suite>
