@@ -1,5 +1,7 @@
 package io.siddhi.extension.map.p4.trpt;
 
+import com.google.gson.JsonObject;
+
 /**
  * Responsible for extracting the bytes of a Telemetry Report UDP packet.
  */
@@ -33,5 +35,24 @@ public class TelemetryReport {
         srcPort = ByteUtils.getLongFromBytes(trptBytes, byteIndex + intHdr.lastIndex + 2, 2);
         dstPort = ByteUtils.getLongFromBytes(trptBytes, byteIndex + intHdr.lastIndex + 4, 2);
     }
+
+    public String toJsonStr() {
+        return this.toJson().toString();
+    }
+
+    public JsonObject toJson() {
+        final JsonObject outJson = new JsonObject();
+
+        outJson.add("telemRptHdr", trptHdr.toJson());
+        outJson.add("intEthHdr", intEthHdr.toJson());
+        outJson.add("ipHdr", ipHdr.toJson());
+        outJson.add("udpIntHdr", udpIntHdr.toJson());
+        outJson.add("intHdr", intHdr.toJson());
+        outJson.addProperty("srcPort", srcPort);
+        outJson.addProperty("dstPort", dstPort);
+
+        return outJson;
+    }
+
 }
 

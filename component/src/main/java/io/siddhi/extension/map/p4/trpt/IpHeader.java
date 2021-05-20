@@ -1,5 +1,7 @@
 package io.siddhi.extension.map.p4.trpt;
 
+import com.google.gson.JsonObject;
+
 import java.net.InetAddress;
 
 /**
@@ -51,5 +53,17 @@ public class IpHeader {
             byteIndex = 24;
         }
         return ByteUtils.getInetAddress(bytes, getVer(), byteIndex);
+    }
+
+    public JsonObject toJson() {
+        final JsonObject outJson = new JsonObject();
+
+        outJson.addProperty("len", this.getLen());
+        outJson.addProperty("nextProto", this.getNextProto());
+        outJson.addProperty("version", this.getVer());
+        outJson.addProperty("dstAddr", this.getDstAddr().getHostAddress());
+        outJson.addProperty("srcAddr", this.getSrcAddr().getHostAddress());
+
+        return outJson;
     }
 }

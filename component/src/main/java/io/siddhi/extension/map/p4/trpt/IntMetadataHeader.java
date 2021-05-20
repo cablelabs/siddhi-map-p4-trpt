@@ -1,5 +1,7 @@
 package io.siddhi.extension.map.p4.trpt;
 
+import com.google.gson.JsonObject;
+
 /**
  * Responsible for extracting the bytes that represent INT Metadata header values into usable values.
  */
@@ -56,4 +58,20 @@ public class IntMetadataHeader {
         return ByteUtils.getBitString(bytes[10]) + ByteUtils.getBitString(bytes[11]);
     }
 
+    public JsonObject toJson() {
+        final JsonObject outJson = new JsonObject();
+
+        outJson.addProperty("version", this.getVersion());
+        outJson.addProperty("d", this.getD());
+        outJson.addProperty("e", this.getE());
+        outJson.addProperty("m", this.getM());
+        outJson.addProperty("mdLen", this.getPerHopMdLen());
+        outJson.addProperty("remainingHopCount", this.getRemainingHopCount());
+        outJson.addProperty("instructions", this.getInstructions());
+        outJson.addProperty("domainId", this.getDomainId());
+        outJson.addProperty("dsInstructions", this.getDsInstructions());
+        outJson.addProperty("dsFlags", this.getDsFlags());
+
+        return outJson;
+    }
 }
