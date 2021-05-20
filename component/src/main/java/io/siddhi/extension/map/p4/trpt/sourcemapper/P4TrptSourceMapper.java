@@ -17,63 +17,20 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
- * Annotation of Siddhi Extension.
- * <pre><code>
- * eg:-
- * {@literal @}Extension(
- * name = "The name of the extension",
- * namespace = "The namespace of the extension",
- * description = "The description of the extension (optional).",
- * //Source Mapper configurations
- * parameters = {
- * {@literal @}Parameter(name = "The name of the first parameter",
- *                               description= "The description of the first parameter",
- *                               type =  "Supported parameter types.
- *                                        eg:{DataType.STRING, DataType.INT, DataType.LONG etc}",
- *                               dynamic= "false
- *                                         (if parameter doesn't depend on each event then dynamic parameter is false.
- *                                         In Source, only use static parameter)",
- *                               optional= "true/false, defaultValue= if it is optional then assign a default value
- *                                          according to the type."),
- * {@literal @}Parameter(name = "The name of the second parameter",
- *                               description= "The description of the second parameter",
- *                               type =   "Supported parameter types.
- *                                         eg:{DataType.STRING, DataType.INT, DataType.LONG etc}",
- *                               dynamic= "false
- *                                         (if parameter doesn't depend on each event then dynamic parameter is false.
- *                                         In Source, only use static parameter)",
- *                               optional= "true/false, defaultValue= if it is optional then assign a default value
- *                                         according to the type."),
- * },
- * //If Source Mapper system configurations will need then
- * systemParameters = {
- * {@literal @}SystemParameter(name = "The name of the first  system parameter",
- *                                      description="The description of the first system parameter." ,
- *                                      defaultValue = "the default value of the system parameter.",
- *                                      possibleParameter="the possible value of the system parameter.",
- *                               ),
- * },
- * examples = {
- * {@literal @}Example(syntax = "sample query with Source Mapper annotation that explain how extension use in Siddhi."
- *                              description =" The description of the given example's query."
- *                      ),
- * }
- * )
- * </code></pre>
+ * Siddhi P4 Telemetry Report source mapper extension
+ * for more information refer https://siddhi.io/en/v5.0/docs/query-guide/#source-mapper
  */
-
 @Extension(
         name = "p4-trpt",
         namespace = "sourceMapper",
         description = "Maps a P4 Telemetry Report byte array into JSON",
         examples = {
                 @Example(
-                        syntax = " ",
-                        description = " "
+                        syntax = "@map(type='p4-trpt')",
+                        description = "Best when used with udp plugin when listening to the Telemetry Report port"
                 )
         }
 )
-// for more information refer https://siddhi.io/en/v5.0/docs/query-guide/#source-mapper
 public class P4TrptSourceMapper extends SourceMapper {
 
     private static final Logger log = Logger.getLogger(P4TrptSourceMapper.class);
@@ -118,8 +75,10 @@ public class P4TrptSourceMapper extends SourceMapper {
         log.info("Event values - " + eventObject.toString());
 
         final TelemetryReport telemetryReport;
+        long timestamp = System.currentTimeMillis();
         if (eventObject instanceof ByteBuffer) {
             telemetryReport = new TelemetryReport(((ByteBuffer) eventObject).array());
+            timestamp = ((ByteBuffer) eventObject).getLong();
         } else if (eventObject instanceof byte[]) {
             telemetryReport = new TelemetryReport((byte[]) eventObject);
         } else {
@@ -127,8 +86,9 @@ public class P4TrptSourceMapper extends SourceMapper {
         }
         final Event event = new Event();
         final Object[] eventObjs = new Object[1];
-        eventObjs[0] = telemetryReport;
+        eventObjs[0] = telemetryReport.toJsonStr();
         event.setData(eventObjs);
+        event.setTimestamp(timestamp);
         try {
             inputEventHandler.sendEvent(event);
         } catch (InterruptedException e) {

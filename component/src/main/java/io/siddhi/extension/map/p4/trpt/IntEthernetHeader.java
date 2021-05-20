@@ -1,5 +1,7 @@
 package io.siddhi.extension.map.p4.trpt;
 
+import com.google.gson.JsonObject;
+
 /**
  * Responsible for extracting the bytes that represent INT ethernet header values into usable values.
  */
@@ -21,5 +23,15 @@ public class IntEthernetHeader {
 
     public long getType() {
         return ByteUtils.getLongFromBytes(bytes, 12, 2);
+    }
+
+    public JsonObject toJson() {
+        final JsonObject outJson = new JsonObject();
+
+        outJson.addProperty("dstMac", this.getDstMac());
+        outJson.addProperty("srcMac", this.getSrcMac());
+        outJson.addProperty("type", this.getType());
+
+        return outJson;
     }
 }

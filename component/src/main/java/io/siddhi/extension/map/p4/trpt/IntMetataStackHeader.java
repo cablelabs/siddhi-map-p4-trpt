@@ -1,5 +1,8 @@
 package io.siddhi.extension.map.p4.trpt;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,4 +45,18 @@ public class IntMetataStackHeader {
         return out;
     }
 
+    public JsonObject toJson() {
+        final JsonObject outJson = new JsonObject();
+
+        outJson.addProperty("origMac", this.getOrigMac());
+
+        final JsonArray hopsJsonArr = new JsonArray();
+
+        for (final long hop : hops) {
+            hopsJsonArr.add(hop);
+        }
+        outJson.add("hops", hopsJsonArr);
+
+        return outJson;
+    }
 }

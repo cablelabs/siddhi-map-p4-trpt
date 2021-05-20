@@ -1,5 +1,7 @@
 package io.siddhi.extension.map.p4.trpt;
 
+import com.google.gson.JsonObject;
+
 /**
  * Responsible for extracting the bytes that represent the Telemetry Report header values into usable values.
  */
@@ -97,4 +99,30 @@ public class TelemetryReportHeader {
         return ByteUtils.getBitString(bytes[20]) + ByteUtils.getBitString(bytes[21])
                 + ByteUtils.getBitString(bytes[22]) + ByteUtils.getBitString(bytes[23]);
     }
+
+    public JsonObject toJson() {
+        final JsonObject outJson = new JsonObject();
+
+        outJson.addProperty("domainId", this.getDomainId());
+        outJson.addProperty("hardwareId", this.getHardwareId());
+        outJson.addProperty("inType", this.getInType());
+        outJson.addProperty("nodeId", this.getNodeId());
+        outJson.addProperty("rptLen", this.getReportLength());
+        outJson.addProperty("seqNo", this.getSequenceId());
+        outJson.addProperty("version", this.getVersion());
+        outJson.addProperty("metaLen", this.getMetadataLength());
+        outJson.addProperty("rptType", this.getReportType());
+        outJson.addProperty("d", this.getD());
+        outJson.addProperty("q", this.getQ());
+        outJson.addProperty("f", this.getF());
+        outJson.addProperty("i", this.getI());
+        outJson.addProperty("repMdBits", this.getRepMdBitStr());
+        outJson.addProperty("mdbBits", this.getDsMdbBitStr());
+        outJson.addProperty("mdsBits", this.getDsMdsBitStr());
+        outJson.addProperty("mdsBits", this.getDsMdsBitStr());
+        outJson.addProperty("varOptMd", this.getVarOptMd());
+
+        return outJson;
+    }
+
 }
