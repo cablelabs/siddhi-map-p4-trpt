@@ -23,6 +23,10 @@ import com.google.gson.JsonObject;
 public class IntHeader {
 
     static final int INT_SHIM_SIZE = 6;
+    public final static String INT_HDR_SHIM_HDR_KEY = "shimHdr";
+    public final static String INT_HDR_MD_HDR_KEY = "mdHdr";
+    public final static String INT_HDR_MD_STACK_HDR_KEY = "mdStackHdr";
+
     private final byte[] bytes;
 
     public final IntShimHeader shimHdr;
@@ -46,9 +50,9 @@ public class IntHeader {
     public JsonObject toJson() {
         final JsonObject outJson = new JsonObject();
 
-        outJson.add("shimHdr", shimHdr.toJson());
-        outJson.add("mdHdr", mdHdr.toJson());
-        outJson.add("mdStackHdr", mdStackHdr.toJson());
+        outJson.add(INT_HDR_SHIM_HDR_KEY, shimHdr.toJson());
+        outJson.add(INT_HDR_MD_HDR_KEY, mdHdr.toJson());
+        outJson.add(INT_HDR_MD_STACK_HDR_KEY, mdStackHdr.toJson());
 
         return outJson;
     }

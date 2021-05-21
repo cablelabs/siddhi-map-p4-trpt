@@ -22,6 +22,10 @@ import com.google.gson.JsonObject;
  */
 public class IntEthernetHeader {
 
+    public final static String IETH_HDR_DST_MAC_KEY = "dstMac";
+    public final static String IETH_HDR_SRC_MAC_KEY = "srcMac";
+    public final static String IETH_TYPE_KEY = "type";
+
     private final byte[] bytes;
 
     public IntEthernetHeader(final byte[] bytes) {
@@ -43,9 +47,9 @@ public class IntEthernetHeader {
     public JsonObject toJson() {
         final JsonObject outJson = new JsonObject();
 
-        outJson.addProperty("dstMac", this.getDstMac());
-        outJson.addProperty("srcMac", this.getSrcMac());
-        outJson.addProperty("type", this.getType());
+        outJson.addProperty(IETH_HDR_DST_MAC_KEY, this.getDstMac());
+        outJson.addProperty(IETH_HDR_SRC_MAC_KEY, this.getSrcMac());
+        outJson.addProperty(IETH_TYPE_KEY, this.getType());
 
         return outJson;
     }

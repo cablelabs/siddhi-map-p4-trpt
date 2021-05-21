@@ -22,6 +22,24 @@ import com.google.gson.JsonObject;
  */
 public class TelemetryReportHeader {
 
+    public final static String TRPT_DOMAIN_ID_KEY = "domainId";
+    public final static String TRPT_HW_ID_KEY = "hardwareId";
+    public final static String TRPT_IN_TYPE_KEY = "inType";
+    public final static String TRPT_NODE_ID_KEY = "nodeId";
+    public final static String TRPT_RPT_LEN_KEY = "rptLen";
+    public final static String TRPT_SEQ_NO_KEY = "seqNo";
+    public final static String TRPT_VER_KEY = "version";
+    public final static String TRPT_META_LEN_KEY = "metaLen";
+    public final static String TRPT_RPT_TYPE_KEY = "rptType";
+    public final static String TRPT_D_KEY = "d";
+    public final static String TRPT_Q_KEY = "q";
+    public final static String TRPT_F_KEY = "f";
+    public final static String TRPT_I_KEY = "i";
+    public final static String TRPT_REP_MD_BITS_KEY = "repMdBits";
+    public final static String TRPT_MDB_BITS_KEY = "mdbBits";
+    public final static String TRPT_MDS_BITS_KEY = "mdsBits";
+    public final static String TRPT_VAR_OPT_MD_KEY = "varOptMd";
+
     private final byte[] bytes;
 
     public TelemetryReportHeader(final byte[] bytes) {
@@ -118,24 +136,23 @@ public class TelemetryReportHeader {
     public JsonObject toJson() {
         final JsonObject outJson = new JsonObject();
 
-        outJson.addProperty("domainId", this.getDomainId());
-        outJson.addProperty("hardwareId", this.getHardwareId());
-        outJson.addProperty("inType", this.getInType());
-        outJson.addProperty("nodeId", this.getNodeId());
-        outJson.addProperty("rptLen", this.getReportLength());
-        outJson.addProperty("seqNo", this.getSequenceId());
-        outJson.addProperty("version", this.getVersion());
-        outJson.addProperty("metaLen", this.getMetadataLength());
-        outJson.addProperty("rptType", this.getReportType());
-        outJson.addProperty("d", this.getD());
-        outJson.addProperty("q", this.getQ());
-        outJson.addProperty("f", this.getF());
-        outJson.addProperty("i", this.getI());
-        outJson.addProperty("repMdBits", this.getRepMdBitStr());
-        outJson.addProperty("mdbBits", this.getDsMdbBitStr());
-        outJson.addProperty("mdsBits", this.getDsMdsBitStr());
-        outJson.addProperty("mdsBits", this.getDsMdsBitStr());
-        outJson.addProperty("varOptMd", this.getVarOptMd());
+        outJson.addProperty(TRPT_DOMAIN_ID_KEY, this.getDomainId());
+        outJson.addProperty(TRPT_HW_ID_KEY, this.getHardwareId());
+        outJson.addProperty(TRPT_IN_TYPE_KEY, this.getInType());
+        outJson.addProperty(TRPT_NODE_ID_KEY, this.getNodeId());
+        outJson.addProperty(TRPT_RPT_LEN_KEY, this.getReportLength());
+        outJson.addProperty(TRPT_SEQ_NO_KEY, this.getSequenceId());
+        outJson.addProperty(TRPT_VER_KEY, this.getVersion());
+        outJson.addProperty(TRPT_META_LEN_KEY, this.getMetadataLength());
+        outJson.addProperty(TRPT_RPT_TYPE_KEY, this.getReportType());
+        outJson.addProperty(TRPT_D_KEY, this.getD());
+        outJson.addProperty(TRPT_Q_KEY, this.getQ());
+        outJson.addProperty(TRPT_F_KEY, this.getF());
+        outJson.addProperty(TRPT_I_KEY, this.getI());
+        outJson.addProperty(TRPT_REP_MD_BITS_KEY, this.getRepMdBitStr());
+        outJson.addProperty(TRPT_MDB_BITS_KEY, this.getDsMdbBitStr());
+        outJson.addProperty(TRPT_MDS_BITS_KEY, this.getDsMdsBitStr());
+        outJson.addProperty(TRPT_VAR_OPT_MD_KEY, this.getVarOptMd());
 
         return outJson;
     }

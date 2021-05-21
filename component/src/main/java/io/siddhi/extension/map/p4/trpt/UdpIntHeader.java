@@ -22,6 +22,10 @@ import com.google.gson.JsonObject;
  */
 public class UdpIntHeader {
 
+    public final static String UDP_INT_HDR_SRC_PORT_KEY = "srcPort";
+    public final static String UDP_INT_HDR_DST_PORT_KEY = "dstPort";
+    public final static String UDP_INT_HDR_LEN_KEY = "len";
+
     private final byte[] bytes;
 
     public UdpIntHeader(byte[] bytes) {
@@ -43,9 +47,9 @@ public class UdpIntHeader {
     public JsonObject toJson() {
         final JsonObject outJson = new JsonObject();
 
-        outJson.addProperty("srcPort", this.getUdpIntSrcPort());
-        outJson.addProperty("dstPort", this.getUdpIntDstPort());
-        outJson.addProperty("len", this.getUdpIntLen());
+        outJson.addProperty(UDP_INT_HDR_SRC_PORT_KEY, this.getUdpIntSrcPort());
+        outJson.addProperty(UDP_INT_HDR_DST_PORT_KEY, this.getUdpIntDstPort());
+        outJson.addProperty(UDP_INT_HDR_LEN_KEY, this.getUdpIntLen());
 
         return outJson;
     }
