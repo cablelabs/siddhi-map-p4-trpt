@@ -22,6 +22,17 @@ import com.google.gson.JsonObject;
  */
 public class IntMetadataHeader {
 
+    public final static String INT_MD_HDR_VER_KEY = "version";
+    public final static String INT_MD_HDR_D_KEY = "d";
+    public final static String INT_MD_HDR_E_KEY = "e";
+    public final static String INT_MD_HDR_M_KEY = "m";
+    public final static String INT_MD_HDR_MD_LEN_KEY = "mdLen";
+    public final static String INT_MD_HDR_REMAIN_HOP_CNT_KEY = "remainingHopCount";
+    public final static String INT_MD_HDR_INSTR_KEY = "instructions";
+    public final static String INT_MD_HDR_DOMAIN_ID_KEY = "domainId";
+    public final static String INT_MD_HDR_DS_INSTR_KEY = "dsInstructions";
+    public final static String INT_MD_HDR_DS_FLAGS_KEY = "dsFlags";
+
     private final byte[] bytes;
 
     public IntMetadataHeader(final byte[] bytes) {
@@ -76,16 +87,16 @@ public class IntMetadataHeader {
     public JsonObject toJson() {
         final JsonObject outJson = new JsonObject();
 
-        outJson.addProperty("version", this.getVersion());
-        outJson.addProperty("d", this.getD());
-        outJson.addProperty("e", this.getE());
-        outJson.addProperty("m", this.getM());
-        outJson.addProperty("mdLen", this.getPerHopMdLen());
-        outJson.addProperty("remainingHopCount", this.getRemainingHopCount());
-        outJson.addProperty("instructions", this.getInstructions());
-        outJson.addProperty("domainId", this.getDomainId());
-        outJson.addProperty("dsInstructions", this.getDsInstructions());
-        outJson.addProperty("dsFlags", this.getDsFlags());
+        outJson.addProperty(INT_MD_HDR_VER_KEY, this.getVersion());
+        outJson.addProperty(INT_MD_HDR_D_KEY, this.getD());
+        outJson.addProperty(INT_MD_HDR_E_KEY, this.getE());
+        outJson.addProperty(INT_MD_HDR_M_KEY, this.getM());
+        outJson.addProperty(INT_MD_HDR_MD_LEN_KEY, this.getPerHopMdLen());
+        outJson.addProperty(INT_MD_HDR_REMAIN_HOP_CNT_KEY, this.getRemainingHopCount());
+        outJson.addProperty(INT_MD_HDR_INSTR_KEY, this.getInstructions());
+        outJson.addProperty(INT_MD_HDR_DOMAIN_ID_KEY, this.getDomainId());
+        outJson.addProperty(INT_MD_HDR_DS_INSTR_KEY, this.getDsInstructions());
+        outJson.addProperty(INT_MD_HDR_DS_FLAGS_KEY, this.getDsFlags());
 
         return outJson;
     }

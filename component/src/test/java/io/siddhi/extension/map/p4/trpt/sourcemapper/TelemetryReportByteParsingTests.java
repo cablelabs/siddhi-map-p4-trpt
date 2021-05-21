@@ -17,7 +17,15 @@ package io.siddhi.extension.map.p4.trpt.sourcemapper;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import io.siddhi.extension.map.p4.trpt.IntEthernetHeader;
+import io.siddhi.extension.map.p4.trpt.IntHeader;
+import io.siddhi.extension.map.p4.trpt.IntMetadataHeader;
+import io.siddhi.extension.map.p4.trpt.IntMetataStackHeader;
+import io.siddhi.extension.map.p4.trpt.IntShimHeader;
+import io.siddhi.extension.map.p4.trpt.IpHeader;
 import io.siddhi.extension.map.p4.trpt.TelemetryReport;
+import io.siddhi.extension.map.p4.trpt.TelemetryReportHeader;
+import io.siddhi.extension.map.p4.trpt.UdpIntHeader;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -102,80 +110,91 @@ public class TelemetryReportByteParsingTests {
 
         final JsonObject trptJson = trpt.toJson();
 
-        final JsonObject trptHdrJson = trptJson.getAsJsonObject("telemRptHdr");
+        final JsonObject trptHdrJson = trptJson.getAsJsonObject(TelemetryReport.TRPT_HDR_KEY);
         Assert.assertNotNull(trptHdrJson);
-        final JsonObject intEthHdrJson = trptJson.getAsJsonObject("intEthHdr");
+        final JsonObject intEthHdrJson = trptJson.getAsJsonObject(TelemetryReport.INT_ETH_HDR_KEY);
         Assert.assertNotNull(intEthHdrJson);
-        final JsonObject ipHdrJson = trptJson.getAsJsonObject("ipHdr");
+        final JsonObject ipHdrJson = trptJson.getAsJsonObject(TelemetryReport.IP_HDR_KEY);
         Assert.assertNotNull(ipHdrJson);
-        final JsonObject udpIntHdrJson = trptJson.getAsJsonObject("udpIntHdr");
+        final JsonObject udpIntHdrJson = trptJson.getAsJsonObject(TelemetryReport.UDP_INT_HDR_KEY);
         Assert.assertNotNull(udpIntHdrJson);
-        final JsonObject intHdrJson = trptJson.getAsJsonObject("intHdr");
+        final JsonObject intHdrJson = trptJson.getAsJsonObject(TelemetryReport.INT_HDR_KEY);
         Assert.assertNotNull(intHdrJson);
 
         // TRPT Header Values
-        Assert.assertEquals(2, trptHdrJson.get("version").getAsInt());
-        Assert.assertEquals(13, trptHdrJson.get("hardwareId").getAsInt());
-        Assert.assertEquals(1089, trptHdrJson.get("seqNo").getAsLong());
-        Assert.assertEquals(234, trptHdrJson.get("nodeId").getAsLong());
-        Assert.assertEquals(0, trptHdrJson.get("rptType").getAsLong());
-        Assert.assertEquals(4, trptHdrJson.get("inType").getAsInt());
-        Assert.assertEquals(10, trptHdrJson.get("rptLen").getAsInt());
-        Assert.assertEquals(8, trptHdrJson.get("metaLen").getAsInt());
-        Assert.assertEquals(0, trptHdrJson.get("d").getAsInt());
-        Assert.assertEquals(1, trptHdrJson.get("q").getAsInt());
-        Assert.assertEquals(0, trptHdrJson.get("f").getAsInt());
-        Assert.assertEquals(1, trptHdrJson.get("i").getAsInt());
-        Assert.assertEquals("0101010110101010", trptHdrJson.get("repMdBits").getAsString());
-        Assert.assertEquals(21587, trptHdrJson.get("domainId").getAsLong());
-        Assert.assertEquals("0101010110101010", trptHdrJson.get("mdbBits").getAsString());
-        Assert.assertEquals("1010101001010101", trptHdrJson.get("mdsBits").getAsString());
-        Assert.assertEquals("00000000000000000000000000000000", trptHdrJson.get("varOptMd").getAsString());
+        Assert.assertEquals(2, trptHdrJson.get(TelemetryReportHeader.TRPT_VER_KEY).getAsInt());
+        Assert.assertEquals(13, trptHdrJson.get(TelemetryReportHeader.TRPT_HW_ID_KEY).getAsInt());
+        Assert.assertEquals(1089, trptHdrJson.get(TelemetryReportHeader.TRPT_SEQ_NO_KEY).getAsLong());
+        Assert.assertEquals(234, trptHdrJson.get(TelemetryReportHeader.TRPT_NODE_ID_KEY).getAsLong());
+        Assert.assertEquals(0, trptHdrJson.get(TelemetryReportHeader.TRPT_RPT_TYPE_KEY).getAsLong());
+        Assert.assertEquals(4, trptHdrJson.get(TelemetryReportHeader.TRPT_IN_TYPE_KEY).getAsInt());
+        Assert.assertEquals(10, trptHdrJson.get(TelemetryReportHeader.TRPT_RPT_LEN_KEY).getAsInt());
+        Assert.assertEquals(8, trptHdrJson.get(TelemetryReportHeader.TRPT_META_LEN_KEY).getAsInt());
+        Assert.assertEquals(0, trptHdrJson.get(TelemetryReportHeader.TRPT_D_KEY).getAsInt());
+        Assert.assertEquals(1, trptHdrJson.get(TelemetryReportHeader.TRPT_Q_KEY).getAsInt());
+        Assert.assertEquals(0, trptHdrJson.get(TelemetryReportHeader.TRPT_F_KEY).getAsInt());
+        Assert.assertEquals(1, trptHdrJson.get(TelemetryReportHeader.TRPT_I_KEY).getAsInt());
+        Assert.assertEquals("0101010110101010", trptHdrJson.get(
+                TelemetryReportHeader.TRPT_REP_MD_BITS_KEY).getAsString());
+        Assert.assertEquals(21587, trptHdrJson.get(TelemetryReportHeader.TRPT_DOMAIN_ID_KEY).getAsLong());
+        Assert.assertEquals("0101010110101010", trptHdrJson.get(
+                TelemetryReportHeader.TRPT_MDB_BITS_KEY).getAsString());
+        Assert.assertEquals("1010101001010101", trptHdrJson.get(
+                TelemetryReportHeader.TRPT_MDS_BITS_KEY).getAsString());
+        Assert.assertEquals("00000000000000000000000000000000", trptHdrJson.get(
+                TelemetryReportHeader.TRPT_VAR_OPT_MD_KEY).getAsString());
 
         // Original Ethernet Header Values
-        Assert.assertEquals("00:00:00:00:05:01", intEthHdrJson.get("dstMac").getAsString());
-        Assert.assertEquals("00:00:00:00:01:01", intEthHdrJson.get("srcMac").getAsString());
-        Assert.assertEquals(2048, intEthHdrJson.get("type").getAsLong());
+        Assert.assertEquals("00:00:00:00:05:01", intEthHdrJson.get(
+                IntEthernetHeader.IETH_HDR_DST_MAC_KEY).getAsString());
+        Assert.assertEquals("00:00:00:00:01:01", intEthHdrJson.get(
+                IntEthernetHeader.IETH_HDR_SRC_MAC_KEY).getAsString());
+        Assert.assertEquals(2048, intEthHdrJson.get(
+                IntEthernetHeader.IETH_TYPE_KEY).getAsLong());
 
         // Original IP Header Values
-        Assert.assertEquals(4, ipHdrJson.get("version").getAsInt());
-        Assert.assertEquals(94, ipHdrJson.get("len").getAsInt());
-        Assert.assertEquals(17, ipHdrJson.get("nextProto").getAsInt()); // UDP
-        Assert.assertEquals("192.168.1.2", ipHdrJson.get("srcAddr").getAsString()); // IP
-        Assert.assertEquals("192.168.1.10", ipHdrJson.get("dstAddr").getAsString()); // IP
+        Assert.assertEquals(4, ipHdrJson.get(IpHeader.IP_HDR_VER_KEY).getAsInt());
+        Assert.assertEquals(94, ipHdrJson.get(IpHeader.IP_HDR_LEN_KEY).getAsInt());
+        Assert.assertEquals(17, ipHdrJson.get(IpHeader.IP_HDR_NEXT_PROTO_KEY).getAsInt()); // UDP
+        Assert.assertEquals("192.168.1.2", ipHdrJson.get(IpHeader.IP_HDR_SRC_ADDR_KEY).getAsString()); // IP
+        Assert.assertEquals("192.168.1.10", ipHdrJson.get(IpHeader.IP_HDR_DST_ADDR_KEY).getAsString()); // IP
 
         // UDP INT Header values
-        Assert.assertEquals(0, udpIntHdrJson.get("srcPort").getAsLong());
-        Assert.assertEquals(555, udpIntHdrJson.get("dstPort").getAsLong());
-        Assert.assertEquals(74, udpIntHdrJson.get("len").getAsInt());
+        Assert.assertEquals(0, udpIntHdrJson.get(UdpIntHeader.UDP_INT_HDR_SRC_PORT_KEY).getAsLong());
+        Assert.assertEquals(555, udpIntHdrJson.get(UdpIntHeader.UDP_INT_HDR_DST_PORT_KEY).getAsLong());
+        Assert.assertEquals(74, udpIntHdrJson.get(UdpIntHeader.UDP_INT_HDR_LEN_KEY).getAsInt());
 
         // INT Shim values
-        final JsonObject shimHdrJson = intHdrJson.getAsJsonObject("shimHdr");
+        final JsonObject shimHdrJson = intHdrJson.getAsJsonObject(IntHeader.INT_HDR_SHIM_HDR_KEY);
         Assert.assertNotNull(shimHdrJson);
-        Assert.assertEquals(1, shimHdrJson.get("type").getAsInt());
-        Assert.assertEquals(2, shimHdrJson.get("npt").getAsInt());
-        Assert.assertEquals(17, shimHdrJson.get("nextProto").getAsInt());
+        Assert.assertEquals(1, shimHdrJson.get(IntShimHeader.INT_SHIM_HDR_TYPE_KEY).getAsInt());
+        Assert.assertEquals(2, shimHdrJson.get(IntShimHeader.INT_SHIM_HDR_NPT_KEY).getAsInt());
+        Assert.assertEquals(17, shimHdrJson.get(IntShimHeader.INT_SHIM_HDR_NEXT_PROTO_KEY).getAsInt());
 
         // INT Metadata values
-        final JsonObject mdHdrJson = intHdrJson.getAsJsonObject("mdHdr");
+        final JsonObject mdHdrJson = intHdrJson.getAsJsonObject(IntHeader.INT_HDR_MD_HDR_KEY);
         Assert.assertNotNull(mdHdrJson);
-        Assert.assertEquals(2, mdHdrJson.get("version").getAsInt());
-        Assert.assertEquals(0, mdHdrJson.get("d").getAsInt());
-        Assert.assertEquals(0, mdHdrJson.get("e").getAsInt());
-        Assert.assertEquals(0, mdHdrJson.get("m").getAsInt());
-        Assert.assertEquals(1, mdHdrJson.get("mdLen").getAsInt());
-        Assert.assertEquals(9, mdHdrJson.get("remainingHopCount").getAsInt());
-        Assert.assertEquals("1000000000000000", mdHdrJson.get("instructions").getAsString());
-        Assert.assertEquals(21587, mdHdrJson.get("domainId").getAsInt());
-        Assert.assertEquals("1000000000000000", mdHdrJson.get("dsInstructions").getAsString());
-        Assert.assertEquals("0100000000000000", mdHdrJson.get("dsFlags").getAsString());
+        Assert.assertEquals(2, mdHdrJson.get(IntMetadataHeader.INT_MD_HDR_VER_KEY).getAsInt());
+        Assert.assertEquals(0, mdHdrJson.get(IntMetadataHeader.INT_MD_HDR_D_KEY).getAsInt());
+        Assert.assertEquals(0, mdHdrJson.get(IntMetadataHeader.INT_MD_HDR_E_KEY).getAsInt());
+        Assert.assertEquals(0, mdHdrJson.get(IntMetadataHeader.INT_MD_HDR_M_KEY).getAsInt());
+        Assert.assertEquals(1, mdHdrJson.get(IntMetadataHeader.INT_MD_HDR_MD_LEN_KEY).getAsInt());
+        Assert.assertEquals(9, mdHdrJson.get(IntMetadataHeader.INT_MD_HDR_REMAIN_HOP_CNT_KEY).getAsInt());
+        Assert.assertEquals("1000000000000000", mdHdrJson.get(
+                IntMetadataHeader.INT_MD_HDR_INSTR_KEY).getAsString());
+        Assert.assertEquals(21587, mdHdrJson.get(IntMetadataHeader.INT_MD_HDR_DOMAIN_ID_KEY).getAsInt());
+        Assert.assertEquals("1000000000000000", mdHdrJson.get(
+                IntMetadataHeader.INT_MD_HDR_DS_INSTR_KEY).getAsString());
+        Assert.assertEquals("0100000000000000", mdHdrJson.get(
+                IntMetadataHeader.INT_MD_HDR_DS_FLAGS_KEY).getAsString());
 
         // INT Metadata Stack values
-        final JsonObject mdStackHdrJson = intHdrJson.getAsJsonObject("mdStackHdr");
+        final JsonObject mdStackHdrJson = intHdrJson.getAsJsonObject(IntHeader.INT_HDR_MD_STACK_HDR_KEY);
         Assert.assertNotNull(mdStackHdrJson);
-        Assert.assertEquals("00:00:00:00:01:01", mdStackHdrJson.get("origMac").getAsString());
+        Assert.assertEquals("00:00:00:00:01:01", mdStackHdrJson.get(
+                IntMetataStackHeader.INT_MD_STACK_ORIG_MAC_KEY).getAsString());
 
-        final JsonArray hopsJson = mdStackHdrJson.getAsJsonArray("hops");
+        final JsonArray hopsJson = mdStackHdrJson.getAsJsonArray(IntMetataStackHeader.INT_MD_STACK_HOPS_KEY);
         Assert.assertNotNull(hopsJson);
 
         Assert.assertEquals(2, hopsJson.size());
@@ -184,8 +203,8 @@ public class TelemetryReportByteParsingTests {
 //        Assert.assertTrue(trpt.intHdr.mdStackHdr.getHops().contains((long) 234));
 
         // The originating port values
-        Assert.assertEquals(6680, trptJson.get("srcPort").getAsLong());
-        Assert.assertEquals(5792, trptJson.get("dstPort").getAsLong());
+        Assert.assertEquals(6680, trptJson.get(TelemetryReport.SRC_PORT_KEY).getAsLong());
+        Assert.assertEquals(5792, trptJson.get(TelemetryReport.DST_PORT_KEY).getAsLong());
 
         // TODO - Add validation to the JSON string value
         final String telemRptJsonStr = trpt.toJsonStr();

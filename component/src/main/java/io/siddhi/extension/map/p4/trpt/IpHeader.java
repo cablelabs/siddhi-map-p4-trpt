@@ -24,6 +24,12 @@ import java.net.InetAddress;
  */
 public class IpHeader {
 
+    public final static String IP_HDR_LEN_KEY = "len";
+    public final static String IP_HDR_NEXT_PROTO_KEY = "nextProto";
+    public final static String IP_HDR_VER_KEY = "version";
+    public final static String IP_HDR_DST_ADDR_KEY = "dstAddr";
+    public final static String IP_HDR_SRC_ADDR_KEY = "srcAddr";
+
     private final byte[] bytes;
 
     public IpHeader(byte[] bytes) {
@@ -73,11 +79,11 @@ public class IpHeader {
     public JsonObject toJson() {
         final JsonObject outJson = new JsonObject();
 
-        outJson.addProperty("len", this.getLen());
-        outJson.addProperty("nextProto", this.getNextProto());
-        outJson.addProperty("version", this.getVer());
-        outJson.addProperty("dstAddr", this.getDstAddr().getHostAddress());
-        outJson.addProperty("srcAddr", this.getSrcAddr().getHostAddress());
+        outJson.addProperty(IP_HDR_LEN_KEY, this.getLen());
+        outJson.addProperty(IP_HDR_NEXT_PROTO_KEY, this.getNextProto());
+        outJson.addProperty(IP_HDR_VER_KEY, this.getVer());
+        outJson.addProperty(IP_HDR_DST_ADDR_KEY, this.getDstAddr().getHostAddress());
+        outJson.addProperty(IP_HDR_SRC_ADDR_KEY, this.getSrcAddr().getHostAddress());
 
         return outJson;
     }

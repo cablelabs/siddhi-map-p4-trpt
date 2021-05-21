@@ -22,6 +22,14 @@ import com.google.gson.JsonObject;
  */
 public class TelemetryReport {
 
+    public final static String TRPT_HDR_KEY = "telemRptHdr";
+    public final static String INT_ETH_HDR_KEY = "intEthHdr";
+    public final static String IP_HDR_KEY = "ipHdr";
+    public final static String UDP_INT_HDR_KEY = "udpIntHdr";
+    public final static String INT_HDR_KEY = "intHdr";
+    public final static String SRC_PORT_KEY = "srcPort";
+    public final static String DST_PORT_KEY = "dstPort";
+
     public final TelemetryReportHeader trptHdr;
     public final IntEthernetHeader intEthHdr;
     public final IpHeader ipHdr;
@@ -58,13 +66,13 @@ public class TelemetryReport {
     public JsonObject toJson() {
         final JsonObject outJson = new JsonObject();
 
-        outJson.add("telemRptHdr", trptHdr.toJson());
-        outJson.add("intEthHdr", intEthHdr.toJson());
-        outJson.add("ipHdr", ipHdr.toJson());
-        outJson.add("udpIntHdr", udpIntHdr.toJson());
-        outJson.add("intHdr", intHdr.toJson());
-        outJson.addProperty("srcPort", srcPort);
-        outJson.addProperty("dstPort", dstPort);
+        outJson.add(TRPT_HDR_KEY, trptHdr.toJson());
+        outJson.add(INT_ETH_HDR_KEY, intEthHdr.toJson());
+        outJson.add(IP_HDR_KEY, ipHdr.toJson());
+        outJson.add(UDP_INT_HDR_KEY, udpIntHdr.toJson());
+        outJson.add(INT_HDR_KEY, intHdr.toJson());
+        outJson.addProperty(SRC_PORT_KEY, srcPort);
+        outJson.addProperty(DST_PORT_KEY, dstPort);
 
         return outJson;
     }

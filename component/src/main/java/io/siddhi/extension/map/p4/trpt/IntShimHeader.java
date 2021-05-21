@@ -22,6 +22,11 @@ import com.google.gson.JsonObject;
  */
 public class IntShimHeader {
 
+    public final static String INT_SHIM_HDR_TYPE_KEY = "type";
+    public final static String INT_SHIM_HDR_NPT_KEY = "npt";
+    public final static String INT_SHIM_HDR_LEN_KEY = "len";
+    public final static String INT_SHIM_HDR_NEXT_PROTO_KEY = "nextProto";
+
     private final byte[] bytes;
 
     public IntShimHeader(final byte[] bytes) {
@@ -49,10 +54,10 @@ public class IntShimHeader {
     public JsonObject toJson() {
         final JsonObject outJson = new JsonObject();
 
-        outJson.addProperty("type", this.getType());
-        outJson.addProperty("npt", this.getNpt());
-        outJson.addProperty("len", this.getLength());
-        outJson.addProperty("nextProto", this.getNextProto());
+        outJson.addProperty(INT_SHIM_HDR_TYPE_KEY, this.getType());
+        outJson.addProperty(INT_SHIM_HDR_NPT_KEY, this.getNpt());
+        outJson.addProperty(INT_SHIM_HDR_LEN_KEY, this.getLength());
+        outJson.addProperty(INT_SHIM_HDR_NEXT_PROTO_KEY, this.getNextProto());
 
         return outJson;
     }

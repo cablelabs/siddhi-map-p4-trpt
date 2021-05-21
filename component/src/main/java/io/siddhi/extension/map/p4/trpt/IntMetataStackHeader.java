@@ -26,6 +26,9 @@ import java.util.List;
  */
 public class IntMetataStackHeader {
 
+    public final static String INT_MD_STACK_ORIG_MAC_KEY = "origMac";
+    public final static String INT_MD_STACK_HOPS_KEY = "hops";
+
     private final int numHops;
     private final byte[] bytes;
     private final String origMac;
@@ -63,14 +66,14 @@ public class IntMetataStackHeader {
     public JsonObject toJson() {
         final JsonObject outJson = new JsonObject();
 
-        outJson.addProperty("origMac", this.getOrigMac());
+        outJson.addProperty(INT_MD_STACK_ORIG_MAC_KEY, this.getOrigMac());
 
         final JsonArray hopsJsonArr = new JsonArray();
 
         for (final long hop : hops) {
             hopsJsonArr.add(hop);
         }
-        outJson.add("hops", hopsJsonArr);
+        outJson.add(INT_MD_STACK_HOPS_KEY, hopsJsonArr);
 
         return outJson;
     }
