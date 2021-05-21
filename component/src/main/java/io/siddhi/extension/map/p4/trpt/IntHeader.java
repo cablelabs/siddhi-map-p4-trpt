@@ -23,9 +23,9 @@ import com.google.gson.JsonObject;
 public class IntHeader {
 
     static final int INT_SHIM_SIZE = 6;
-    public final static String INT_HDR_SHIM_HDR_KEY = "shimHdr";
-    public final static String INT_HDR_MD_HDR_KEY = "mdHdr";
-    public final static String INT_HDR_MD_STACK_HDR_KEY = "mdStackHdr";
+    public static final String INT_HDR_SHIM_HDR_KEY = "shimHdr";
+    public static final String INT_HDR_MD_HDR_KEY = "mdHdr";
+    public static final String INT_HDR_MD_STACK_HDR_KEY = "mdStackHdr";
 
     private final byte[] bytes;
 

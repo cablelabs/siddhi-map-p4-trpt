@@ -24,11 +24,11 @@ import java.net.InetAddress;
  */
 public class IpHeader {
 
-    public final static String IP_HDR_LEN_KEY = "len";
-    public final static String IP_HDR_NEXT_PROTO_KEY = "nextProto";
-    public final static String IP_HDR_VER_KEY = "version";
-    public final static String IP_HDR_DST_ADDR_KEY = "dstAddr";
-    public final static String IP_HDR_SRC_ADDR_KEY = "srcAddr";
+    public static final String IP_HDR_LEN_KEY = "len";
+    public static final String IP_HDR_NEXT_PROTO_KEY = "nextProto";
+    public static final String IP_HDR_VER_KEY = "version";
+    public static final String IP_HDR_DST_ADDR_KEY = "dstAddr";
+    public static final String IP_HDR_SRC_ADDR_KEY = "srcAddr";
 
     private final byte[] bytes;
 

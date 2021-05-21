@@ -26,8 +26,8 @@ import java.util.List;
  */
 public class IntMetataStackHeader {
 
-    public final static String INT_MD_STACK_ORIG_MAC_KEY = "origMac";
-    public final static String INT_MD_STACK_HOPS_KEY = "hops";
+    public static final String INT_MD_STACK_ORIG_MAC_KEY = "origMac";
+    public static final String INT_MD_STACK_HOPS_KEY = "hops";
 
     private final int numHops;
     private final byte[] bytes;

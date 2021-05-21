@@ -22,23 +22,23 @@ import com.google.gson.JsonObject;
  */
 public class TelemetryReportHeader {
 
-    public final static String TRPT_DOMAIN_ID_KEY = "domainId";
-    public final static String TRPT_HW_ID_KEY = "hardwareId";
-    public final static String TRPT_IN_TYPE_KEY = "inType";
-    public final static String TRPT_NODE_ID_KEY = "nodeId";
-    public final static String TRPT_RPT_LEN_KEY = "rptLen";
-    public final static String TRPT_SEQ_NO_KEY = "seqNo";
-    public final static String TRPT_VER_KEY = "version";
-    public final static String TRPT_META_LEN_KEY = "metaLen";
-    public final static String TRPT_RPT_TYPE_KEY = "rptType";
-    public final static String TRPT_D_KEY = "d";
-    public final static String TRPT_Q_KEY = "q";
-    public final static String TRPT_F_KEY = "f";
-    public final static String TRPT_I_KEY = "i";
-    public final static String TRPT_REP_MD_BITS_KEY = "repMdBits";
-    public final static String TRPT_MDB_BITS_KEY = "mdbBits";
-    public final static String TRPT_MDS_BITS_KEY = "mdsBits";
-    public final static String TRPT_VAR_OPT_MD_KEY = "varOptMd";
+    public static final String TRPT_DOMAIN_ID_KEY = "domainId";
+    public static final String TRPT_HW_ID_KEY = "hardwareId";
+    public static final String TRPT_IN_TYPE_KEY = "inType";
+    public static final String TRPT_NODE_ID_KEY = "nodeId";
+    public static final String TRPT_RPT_LEN_KEY = "rptLen";
+    public static final String TRPT_SEQ_NO_KEY = "seqNo";
+    public static final String TRPT_VER_KEY = "version";
+    public static final String TRPT_META_LEN_KEY = "metaLen";
+    public static final String TRPT_RPT_TYPE_KEY = "rptType";
+    public static final String TRPT_D_KEY = "d";
+    public static final String TRPT_Q_KEY = "q";
+    public static final String TRPT_F_KEY = "f";
+    public static final String TRPT_I_KEY = "i";
+    public static final String TRPT_REP_MD_BITS_KEY = "repMdBits";
+    public static final String TRPT_MDB_BITS_KEY = "mdbBits";
+    public static final String TRPT_MDS_BITS_KEY = "mdsBits";
+    public static final String TRPT_VAR_OPT_MD_KEY = "varOptMd";
 
     private final byte[] bytes;
 

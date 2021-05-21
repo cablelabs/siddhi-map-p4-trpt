@@ -22,13 +22,13 @@ import com.google.gson.JsonObject;
  */
 public class TelemetryReport {
 
-    public final static String TRPT_HDR_KEY = "telemRptHdr";
-    public final static String INT_ETH_HDR_KEY = "intEthHdr";
-    public final static String IP_HDR_KEY = "ipHdr";
-    public final static String UDP_INT_HDR_KEY = "udpIntHdr";
-    public final static String INT_HDR_KEY = "intHdr";
-    public final static String SRC_PORT_KEY = "srcPort";
-    public final static String DST_PORT_KEY = "dstPort";
+    public static final String TRPT_HDR_KEY = "telemRptHdr";
+    public static final String INT_ETH_HDR_KEY = "intEthHdr";
+    public static final String IP_HDR_KEY = "ipHdr";
+    public static final String UDP_INT_HDR_KEY = "udpIntHdr";
+    public static final String INT_HDR_KEY = "intHdr";
+    public static final String SRC_PORT_KEY = "srcPort";
+    public static final String DST_PORT_KEY = "dstPort";
 
     public final TelemetryReportHeader trptHdr;
     public final IntEthernetHeader intEthHdr;

@@ -22,9 +22,9 @@ import com.google.gson.JsonObject;
  */
 public class IntEthernetHeader {
 
-    public final static String IETH_HDR_DST_MAC_KEY = "dstMac";
-    public final static String IETH_HDR_SRC_MAC_KEY = "srcMac";
-    public final static String IETH_TYPE_KEY = "type";
+    public static final String IETH_HDR_DST_MAC_KEY = "dstMac";
+    public static final String IETH_HDR_SRC_MAC_KEY = "srcMac";
+    public static final String IETH_TYPE_KEY = "type";
 
     private final byte[] bytes;
 

@@ -22,16 +22,16 @@ import com.google.gson.JsonObject;
  */
 public class IntMetadataHeader {
 
-    public final static String INT_MD_HDR_VER_KEY = "version";
-    public final static String INT_MD_HDR_D_KEY = "d";
-    public final static String INT_MD_HDR_E_KEY = "e";
-    public final static String INT_MD_HDR_M_KEY = "m";
-    public final static String INT_MD_HDR_MD_LEN_KEY = "mdLen";
-    public final static String INT_MD_HDR_REMAIN_HOP_CNT_KEY = "remainingHopCount";
-    public final static String INT_MD_HDR_INSTR_KEY = "instructions";
-    public final static String INT_MD_HDR_DOMAIN_ID_KEY = "domainId";
-    public final static String INT_MD_HDR_DS_INSTR_KEY = "dsInstructions";
-    public final static String INT_MD_HDR_DS_FLAGS_KEY = "dsFlags";
+    public static final String INT_MD_HDR_VER_KEY = "version";
+    public static final String INT_MD_HDR_D_KEY = "d";
+    public static final String INT_MD_HDR_E_KEY = "e";
+    public static final String INT_MD_HDR_M_KEY = "m";
+    public static final String INT_MD_HDR_MD_LEN_KEY = "mdLen";
+    public static final String INT_MD_HDR_REMAIN_HOP_CNT_KEY = "remainingHopCount";
+    public static final String INT_MD_HDR_INSTR_KEY = "instructions";
+    public static final String INT_MD_HDR_DOMAIN_ID_KEY = "domainId";
+    public static final String INT_MD_HDR_DS_INSTR_KEY = "dsInstructions";
+    public static final String INT_MD_HDR_DS_FLAGS_KEY = "dsFlags";
 
     private final byte[] bytes;
 

@@ -22,9 +22,9 @@ import com.google.gson.JsonObject;
  */
 public class UdpIntHeader {
 
-    public final static String UDP_INT_HDR_SRC_PORT_KEY = "srcPort";
-    public final static String UDP_INT_HDR_DST_PORT_KEY = "dstPort";
-    public final static String UDP_INT_HDR_LEN_KEY = "len";
+    public static final String UDP_INT_HDR_SRC_PORT_KEY = "srcPort";
+    public static final String UDP_INT_HDR_DST_PORT_KEY = "dstPort";
+    public static final String UDP_INT_HDR_LEN_KEY = "len";
 
     private final byte[] bytes;
 
