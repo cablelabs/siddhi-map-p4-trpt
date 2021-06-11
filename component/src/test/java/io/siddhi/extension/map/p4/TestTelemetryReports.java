@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.siddhi.extension.map.p4.trpt.sourcemapper;
+package io.siddhi.extension.map.p4;
 
 /**
  * Describes the bytes held within the body of a Telemetry Report UDP Packet.

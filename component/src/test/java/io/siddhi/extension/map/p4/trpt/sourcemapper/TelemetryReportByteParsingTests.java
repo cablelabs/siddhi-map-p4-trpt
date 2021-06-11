@@ -17,6 +17,7 @@ package io.siddhi.extension.map.p4.trpt.sourcemapper;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import io.siddhi.extension.map.p4.TestTelemetryReports;
 import io.siddhi.extension.map.p4.trpt.IntEthernetHeader;
 import io.siddhi.extension.map.p4.trpt.IntHeader;
 import io.siddhi.extension.map.p4.trpt.IntMetadataHeader;
