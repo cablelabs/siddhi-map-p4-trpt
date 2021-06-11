@@ -3,8 +3,8 @@
 <suite name="Siddhi-Map-P4Trpt-Test-Suite">
     <test name="Siddhi-map-p4-trpt-tests" enabled="true" preserve-order="true" parallel="false">
         <classes>
-            <class name="io.siddhi.extension.map.p4.trpt.sinkmapper.TestCaseOfP4TrptSinkMapper"/>
-            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.TelemetryReportByteParsingTests"/>
+            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceKafkaSinkTelemetryReportTestCase"/>
+            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceToKafkaSourceTelemetryReportTestCase"/>
         </classes>
     </test>
 </suite>
