@@ -15,16 +15,16 @@
 
 package io.siddhi.extension.map.p4.trpt.sourcemapper;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import io.siddhi.core.SiddhiAppRuntime;
 import io.siddhi.core.SiddhiManager;
 import io.siddhi.core.event.Event;
 import io.siddhi.core.query.output.callback.QueryCallback;
 import io.siddhi.core.util.EventPrinter;
 import io.siddhi.extension.map.p4.TestTelemetryReports;
-import io.siddhi.extension.map.p4.trpt.TelemetryReportHeader;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.log4j.Logger;
@@ -36,37 +36,45 @@ import org.testng.annotations.Test;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
-
+import java.util.concurrent.Executors;
 
 /**
  * Tests for the UDP Source extension with the p4-trpt mapper to ensure that the events get sent out to Kafka with
  * "json" mapping and received by the kafka source with "json" mapping.
  */
-public class UDPSourceToKafkaSourceTelemetryReportTestCase {
+public class SimpleDDoSAlertTestCase {
     // If you will know about this related testcase,
     //refer https://github.com/siddhi-io/siddhi-io-file/blob/master/component/src/test
 
     private static final Logger log = Logger.getLogger(UDPSourceToKafkaSourceTelemetryReportTestCase.class);
-    private SiddhiAppRuntime srcUdpSiddhiAppRuntime;
-    private SiddhiAppRuntime kafkaIngressSiddhiAppRuntime;
-    private List<Event[]> parsedUdpEvents;
-    private List<Event[]> kafkaIngressEvents;
-    private String testTopic;
-    private final String kafkaServer = "wso2-vm:9092";
-    private static final int numTestEvents = 1000;
+
+    private static final String kafkaServer = "wso2-vm:9092";
+    private static final int numTestEvents = 200;
     private static final int waitMs = 500;
 
+    private SiddhiAppRuntime srcUdpSiddhiAppRuntime;
+    private SiddhiAppRuntime kafkaIngressSiddhiAppRuntime;
+    private List<Event[]> alertEvents;
+    private String testTopic;
+    private HttpServer httpServer;
+    private MyHttpHandler handler;
+
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
         log.info("In setUp()");
-        parsedUdpEvents = new ArrayList<>();
-        kafkaIngressEvents = new ArrayList<>();
+        alertEvents = new ArrayList<>();
         testTopic = UUID.randomUUID().toString();
+        httpServer = HttpServer.create(new InetSocketAddress(5005), 0);
+        handler = new MyHttpHandler();
+        httpServer.createContext("/attack", handler);
+        httpServer.setExecutor(Executors.newFixedThreadPool(1));
+        httpServer.start();
 
         final SiddhiManager siddhiManager = new SiddhiManager();
         createSrcUdpAppRuntime(siddhiManager);
@@ -88,6 +96,7 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
             log.info("Deleting testTopic - " + testTopic);
             client.deleteTopics(Collections.singletonList(testTopic));
             client.close();
+            httpServer.stop(0);
         }
 
         log.info("Siddhi App Runtime down");
@@ -135,7 +144,9 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
      */
     private void runTest(final byte[] bytes) {
         try {
-            sendTestEvents(bytes, numTestEvents);
+            sendTestEvents(bytes, numTestEvents, 1);
+            Thread.sleep(1500);
+            sendTestEvents(bytes, numTestEvents, 1);
 
             // Wait a short bit for the processing to complete
             Thread.sleep(waitMs);
@@ -143,10 +154,33 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
             throw new RuntimeException(e);
         }
 
-        Assert.assertEquals(numTestEvents, kafkaIngressEvents.size());
-        Assert.assertEquals(numTestEvents, parsedUdpEvents.size());
+        // TODO - make more dynamic
+//        Assert.assertEquals(alertEvents.size(), 1);
+        Assert.assertEquals(alertEvents.size(), 2);
+        validateAlertEvents();
 
-        validateTelemetryReports();
+        // TODO - HTTP requests with keyvalue mapping (maybe JSON encoded body too) not working with HttpSink
+        //  (and hacked version HttpSinkFix)
+        Assert.assertEquals(handler.responses.size(), 2);
+        validateHttpResponses();
+    }
+
+    void validateAlertEvents() {
+        for (final Event[] events : alertEvents) {
+            Assert.assertEquals(events.length, 1);
+            Assert.assertEquals((String) events[0].getData(0), "00:00:00:00:01:01");
+            if (events[0].getData(1) == "4") {
+                Assert.assertEquals(events[0].getData(2), "192.168.1.10");
+                Assert.assertEquals(events[0].getData(3), "5792");
+            }
+        }
+    }
+
+    void validateHttpResponses() {
+        for (final String response : handler.responses) {
+            Assert.assertTrue(response.contains("00:00:00:00:01:01"));
+            Assert.assertTrue(response.contains("5792"));
+        }
     }
 
     /**
@@ -156,29 +190,32 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
      * @param siddhiManager - the Siddhi manager to leverage
      */
     private void createKafkaIngressAppRuntime(final SiddhiManager siddhiManager) {
-        final String kafkaSourceDefinition = String.format(
-                "@app:name('Kafka-Source-TRPT')\n" +
-                    "@source(type='kafka', topic.list='%s', bootstrap.servers='%s', group.id='test',\n" +
-                    "threading.option='single.thread',\n" +
-                        "@map(type='p4-trpt-json',\n" +
-                            "@attributes(domainId='telemRptHdr.domainId', ipVer='ipHdr.version',\n" +
-                                "dstAddr='ipHdr.dstAddr', dstPort='dstPort')))\n" +
-                    "@sink(type='file', file.uri='/tmp/alerts.out', @map(type='json'))\n" +
-                    "define stream trptJsonStream (domainId long, ipVer int, dstAddr string, dstPort long);",
-                testTopic, kafkaServer);
-        final String kafkaSourceQuery =
-                "@info(name = 'sourceQuery')\n" +
-                    "from trptJsonStream\n" +
-                    "select *\n" +
-                    "insert into parsedTrpt;";
-        log.info("Kafka-Source-TRPT Siddhi script \n" + kafkaSourceDefinition + kafkaSourceQuery);
-        kafkaIngressSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(kafkaSourceDefinition + kafkaSourceQuery);
-        kafkaIngressSiddhiAppRuntime.addCallback("sourceQuery", new QueryCallback() {
+        final String siddhiScriptStr = String.format(
+            "@app:name('Kafka-Source-JSON')\n" +
+            "@source(type='kafka', topic.list='%s', bootstrap.servers='%s', group.id='test',\n" +
+                "threading.option='single.thread',\n" +
+                "@map(type='p4-trpt-json',\n" +
+                    "@attributes(origMac='intHdr.mdStackHdr.origMac', ipVer='ipHdr.version',\n" +
+                    "dstAddr='ipHdr.dstAddr', dstPort='dstPort')))\n" +
+            "define stream trptJsonStream (origMac string, ipVer int, dstAddr string, dstPort long);\n" +
+            "@sink(type='http-fix', publisher.url='http://localhost:5005/attack', method='POST',\n" +
+                "headers='trp:headers', @map(type='keyvalue'))\n" +
+            "define stream attackStream (origMac string, ipVer int, dstAddr string, dstPort long, count long);\n" +
+            "@info(name = 'trptJsonQuery')\n" +
+                "from trptJsonStream#window.time(1 sec)\n" +
+                "select origMac, ipVer, dstAddr, dstPort, count(ipVer) as count\n" +
+                "group by origMac, dstAddr, dstPort\n" +
+                "having count == 100\n" +
+                "insert into attackStream;\n",
+            testTopic, kafkaServer);
+        log.info("Kafka-Source-JSON Siddhi script \n" + siddhiScriptStr);
+        kafkaIngressSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(siddhiScriptStr);
+        kafkaIngressSiddhiAppRuntime.addCallback("trptJsonQuery", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
-                log.info("Receiving TRPT JSON");
+                log.info("Query response JSON");
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
-                kafkaIngressEvents.add(inEvents);
+                alertEvents.add(inEvents);
             }
         });
         kafkaIngressSiddhiAppRuntime.start();
@@ -191,89 +228,42 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
      */
     private void createSrcUdpAppRuntime(final SiddhiManager siddhiManager) {
         final String udpSourceDefinition = String.format(
-                "@app:name('UDP-Source-TRPT')\n" +
-                    "@source(type='udp', listen.port='5556', @map(type='p4-trpt'))\n" +
-                    "@sink(type='kafka', topic='%s', bootstrap.servers='%s', @map(type='json'))\n" +
-                    " define stream trptUdpPktStream (telemRpt object);",
+            "@app:name('UDP-Source-TRPT')\n" +
+                "@source(type='udp', listen.port='5556', @map(type='p4-trpt'))\n" +
+                "@sink(type='kafka', topic='%s', bootstrap.servers='%s', @map(type='json'))\n" +
+                "define stream trptUdpPktStream (telemRpt object);",
                 testTopic, kafkaServer);
-
-        // Query used for validating events with the Query callback listener
-        final String udpSourceQuery =
-                "@info(name = 'sourceQuery')\n" +
-                    "from trptUdpPktStream\n" +
-                    "select *\n" +
-                    "insert into distTrptJson;";
-
-        log.info("UDP-Source-TRPT Siddhi script \n" + udpSourceDefinition + udpSourceQuery);
-        srcUdpSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(udpSourceDefinition + udpSourceQuery);
-        srcUdpSiddhiAppRuntime.addCallback("sourceQuery", new QueryCallback() {
-            @Override
-            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
-                log.info("Receiving TRPT JSON");
-                EventPrinter.print(timeStamp, inEvents, removeEvents);
-                parsedUdpEvents.add(inEvents);
-            }
-        });
+        log.info("UDP-Source-TRPT Siddhi script \n" + udpSourceDefinition);
+        srcUdpSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(udpSourceDefinition);
         srcUdpSiddhiAppRuntime.start();
     }
 
-    private void sendTestEvents(final byte[] eventBytes, final int numTestEvents) throws Exception {
+    private void sendTestEvents(final byte[] eventBytes, final int numTestEvents, final long delayMs) throws Exception {
         for (int ctr = 0; ctr < numTestEvents; ctr++) {
             final InetAddress address = InetAddress.getByName("localhost");
             final DatagramPacket packet = new DatagramPacket(eventBytes, 0, eventBytes.length,
                     address, 5556);
             final DatagramSocket datagramSocket = new DatagramSocket();
             datagramSocket.send(packet);
-            Thread.sleep(1, 1000);
+            Thread.sleep(delayMs);
         }
     }
 
-    private void validateTelemetryReports() {
-        for (final Event[] events : parsedUdpEvents) {
-            for (final Event event : events) {
-                validateTrptJsonEvent(event);
-            }
+    private static class MyHttpHandler implements HttpHandler {
+
+        public final List<String> responses = new ArrayList<>();
+
+        @Override
+        public void handle(HttpExchange httpExchange) {
+            // TODO - need to figure out why HttpSink is not forming the POST call properly
+            log.info("httpExchange request method - " + httpExchange.getRequestMethod());
+            log.info("httpExchange request URI - " + httpExchange.getRequestURI());
+            final HttpContext context = httpExchange.getHttpContext();
+            log.info("httpExchange request context attributes - " + context.getAttributes());
+            log.info("httpExchange request context path - " + context.getPath());
+            responses.add(httpExchange.getRequestURI().toString());
         }
-        for (final Event[] events : kafkaIngressEvents) {
-            for (final Event event : events) {
-                validateMappedJsonEvent(event);
-            }
-        }
-    }
-
-    /**
-     * Validates the events generated by the UDP-Source-TRPT Siddhi script.
-     * @param event - the Telemetry Report JSON Event object to validate
-     */
-    private void validateTrptJsonEvent(final Event event) {
-        final String eventStr = (String) event.getData()[0];
-        final JsonParser parser = new JsonParser();
-        final JsonElement jsonElement = parser.parse(eventStr);
-        final JsonObject trptJsonObj = jsonElement.getAsJsonObject();
-        Assert.assertNotNull(trptJsonObj);
-        final JsonObject trptHdrJson = trptJsonObj.get("telemRptHdr").getAsJsonObject();
-        Assert.assertNotNull(trptHdrJson);
-        Assert.assertEquals(2, trptHdrJson.get(TelemetryReportHeader.TRPT_VER_KEY).getAsInt());
-        Assert.assertEquals(234, trptHdrJson.get(TelemetryReportHeader.TRPT_NODE_ID_KEY).getAsLong());
-        Assert.assertEquals(21587, trptHdrJson.get(TelemetryReportHeader.TRPT_DOMAIN_ID_KEY).getAsLong());
-    }
-
-
-    /**
-     * Validates the events generated by the Kafka-Source-TRPT Siddhi script.
-     * @param event - the custom JSON event Event object to validate
-     */
-    private void validateMappedJsonEvent(final Event event) {
-        Assert.assertEquals(4, event.getData().length);
-        Assert.assertEquals(21587L, event.getData()[0]);
-
-        if ((Integer) event.getData()[1] == 6) {
-            Assert.assertEquals("0:0:0:0:0:1:1:1d", event.getData()[2]);
-        } else {
-            Assert.assertEquals("192.168.1.10", event.getData()[2]);
-        }
-
-        Assert.assertEquals(5792L, event.getData()[3]);
     }
 
 }
+
