@@ -39,7 +39,10 @@ public class TelemetryReportTests {
 
     @Test
     public void parse2HopIntUdp4Bytes() {
-        final TelemetryReport trpt = new TelemetryReport(TestTelemetryReports.UDP4_2HOPS);
+        byte[] origBytes = TestTelemetryReports.UDP4_2HOPS;
+        final TelemetryReport trpt = new TelemetryReport(origBytes);
+        byte[] convBytes = trpt.getBytes();
+        Assert.assertArrayEquals(origBytes, convBytes);
 
         // TRPT Header Values
         Assert.assertEquals(2, trpt.trptHdr.getVersion());
@@ -416,6 +419,38 @@ public class TelemetryReportTests {
         Assert.assertEquals(5792, trpt.getDstPort());
     }
 
+    @Test
+    public void convertUdp4Bytes() {
+        byte[] origBytes = TestTelemetryReports.UDP4_2HOPS;
+        final TelemetryReport trpt = new TelemetryReport(origBytes);
+        byte[] convBytes = trpt.getBytes();
+        Assert.assertArrayEquals(origBytes, convBytes);
+    }
+
+    @Test
+    public void convertUdp6Bytes() {
+        byte[] origBytes = TestTelemetryReports.UDP6_2HOPS;
+        final TelemetryReport trpt = new TelemetryReport(origBytes);
+        byte[] convBytes = trpt.getBytes();
+        Assert.assertArrayEquals(origBytes, convBytes);
+    }
+
+    @Test
+    public void convertTcp4Bytes() {
+        byte[] origBytes = TestTelemetryReports.TCP4_2HOPS;
+        final TelemetryReport trpt = new TelemetryReport(origBytes);
+        byte[] convBytes = trpt.getBytes();
+        Assert.assertArrayEquals(origBytes, convBytes);
+    }
+
+    @Test
+    public void convertTcp6Bytes() {
+        byte[] origBytes = TestTelemetryReports.TCP6_2HOPS;
+        final TelemetryReport trpt = new TelemetryReport(origBytes);
+        byte[] convBytes = trpt.getBytes();
+        Assert.assertArrayEquals(origBytes, convBytes);
+    }
+
     @Test(expected = RuntimeException.class)
     public void updateUdp4SrcAddrWith6Addr() {
         final TelemetryReport trpt = new TelemetryReport(TestTelemetryReports.UDP4_2HOPS);
@@ -465,6 +500,7 @@ public class TelemetryReportTests {
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "10.10.1.2");
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "10.10.1.10");
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "11:11:11:11:00:00");
+        validateBytes(trpt);
     }
 
     @Test
@@ -492,6 +528,7 @@ public class TelemetryReportTests {
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "0:0:0:0:0:0:0:1");
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "0:0:0:0:0:0:0:2");
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "11:11:11:11:00:00");
+        validateBytes(trpt);
     }
 
     @Test
@@ -519,6 +556,7 @@ public class TelemetryReportTests {
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "10.10.1.2");
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "10.10.1.10");
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "11:11:11:11:00:00");
+        validateBytes(trpt);
     }
 
     @Test
@@ -546,5 +584,18 @@ public class TelemetryReportTests {
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "0:0:0:0:0:0:0:1");
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "0:0:0:0:0:0:0:2");
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "11:11:11:11:00:00");
+        validateBytes(trpt);
+    }
+
+    private void validateBytes(final TelemetryReport trpt) {
+        final byte[] newBytes = trpt.getBytes();
+        final TelemetryReport newTrpt = new TelemetryReport(newBytes);
+
+        // Validate new object created from the bytes generated from the older
+        Assert.assertEquals(trpt.getSrcPort(), newTrpt.getSrcPort());
+        Assert.assertEquals(trpt.getDstPort(), newTrpt.getDstPort());
+        Assert.assertEquals(trpt.ipHdr.getSrcAddr(), newTrpt.ipHdr.getSrcAddr());
+        Assert.assertEquals(trpt.ipHdr.getDstAddr(), newTrpt.ipHdr.getDstAddr());
+        Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), newTrpt.intHdr.mdStackHdr.getOrigMac());
     }
 }

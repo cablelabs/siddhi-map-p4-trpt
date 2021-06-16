@@ -39,6 +39,10 @@ public class IpHeader {
         this.bytes = bytes.clone();
     }
 
+    public byte[] getBytes() {
+        return this.bytes.clone();
+    }
+
     public short getVer() {
         return (short) ByteUtils.getIntFromNibble(bytes[0], true);
     }

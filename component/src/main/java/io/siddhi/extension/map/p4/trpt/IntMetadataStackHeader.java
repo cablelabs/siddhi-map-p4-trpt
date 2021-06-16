@@ -18,6 +18,7 @@ package io.siddhi.extension.map.p4.trpt;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.netty.util.internal.MacAddressUtil;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,6 @@ public class IntMetadataStackHeader {
 
     private final int numHops;
     private final byte[] bytes;
-//    private final String origMac;
     private final int lastHopIndex;
     private final List<Long> hops;
 
@@ -41,6 +41,14 @@ public class IntMetadataStackHeader {
         this.bytes = bytes.clone();
         this.lastHopIndex = numHops * 4;
         this.hops = readHops();
+    }
+
+    public byte[] getBytes() {
+        final List<Byte> outBytes = new ArrayList<>();
+        for (int i = 0; i < getLastIndex(); i++) {
+            outBytes.add(bytes[i]);
+        }
+        return ArrayUtils.toPrimitive(outBytes.toArray(new Byte[outBytes.size()]));
     }
 
     public int getLastIndex() {

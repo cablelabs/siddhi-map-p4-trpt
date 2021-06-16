@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Tests for the UDP Source extension with the p4-trpt mapper to ensure that the events get sent out to Kafka with
@@ -148,9 +149,11 @@ public class SimpleDDoSAlertTestCase {
      */
     private void runTest(final byte[] bytes) {
         try {
-            sendTestEvents(bytes, numTestEvents, 1);
+            final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newScheduledThreadPool(10);
+            final SendPackets pSender1 = new SendPackets(bytes, numTestEvents, 1, 0);
+            executor.execute(pSender1);
             Thread.sleep(1500);
-            sendTestEvents(bytes, numTestEvents, 1);
+            executor.execute(pSender1);
 
             // Wait a short bit for the processing to complete
             Thread.sleep(waitMs);
@@ -274,3 +277,36 @@ public class SimpleDDoSAlertTestCase {
     }
 }
 
+/**
+ * Class for sending out packets in a ThreadPoolExecutor.
+ */
+class SendPackets implements Runnable {
+    private final byte[] udpPayloadBytes;
+    private final int numEvents;
+    private final long delayMs;
+    private final int delayNanos;
+
+    public SendPackets(final byte[] bytes, final int num, final long dMili, final int dNanos) {
+        udpPayloadBytes = bytes.clone();
+        numEvents = num;
+        delayMs = dMili;
+        delayNanos = dNanos;
+    }
+
+    @Override
+    public void run() {
+        for (int ctr = 0; ctr < numEvents; ctr++) {
+            final InetAddress address;
+            try {
+                address = InetAddress.getByName("localhost");
+                final DatagramPacket packet = new DatagramPacket(udpPayloadBytes, 0, udpPayloadBytes.length,
+                        address, 5556);
+                final DatagramSocket datagramSocket = new DatagramSocket();
+                datagramSocket.send(packet);
+                Thread.sleep(delayMs, delayNanos);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+}

@@ -32,6 +32,10 @@ public class UdpIntHeader {
         this.bytes = bytes.clone();
     }
 
+    public byte[] getBytes() {
+        return this.bytes.clone();
+    }
+
     public long getUdpIntSrcPort() {
         return ByteUtils.getLongFromBytes(bytes, 0, 2);
     }

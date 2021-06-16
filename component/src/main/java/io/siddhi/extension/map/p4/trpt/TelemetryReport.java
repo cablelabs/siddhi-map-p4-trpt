@@ -16,8 +16,11 @@
 package io.siddhi.extension.map.p4.trpt;
 
 import com.google.gson.JsonObject;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Responsible for extracting the bytes of a Telemetry Report UDP packet.
@@ -38,11 +41,14 @@ public class TelemetryReport {
     public final UdpIntHeader udpIntHdr;
     public final IntHeader intHdr;
     private final byte[] bytes;
+    private final int numBytes;
     private final int srcPortPos;
     private final int dstPortPos;
+    private final int lastBytePos;
 
     public TelemetryReport(final byte[] trptBytes) {
         bytes = trptBytes.clone();
+        numBytes = bytes.length;
         int byteIndex = 0;
         trptHdr = new TelemetryReportHeader(ByteUtils.getBytesFrag(bytes, byteIndex, 24));
         byteIndex += 24;
@@ -61,6 +67,31 @@ public class TelemetryReport {
         intHdr = new IntHeader(ByteUtils.getBytesFrag(trptBytes, byteIndex, bytes.length - byteIndex));
         srcPortPos = byteIndex + intHdr.lastIndex + 2;
         dstPortPos = byteIndex + intHdr.lastIndex + 4;
+        lastBytePos = byteIndex + 4;
+    }
+
+    public byte[] getBytes() {
+        final List<Byte> outBytes = new ArrayList<>();
+        for (final byte trptByte : trptHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        for (final byte trptByte : intEthHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        for (final byte trptByte : ipHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        for (final byte trptByte : udpIntHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        for (final byte trptByte : intHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+
+        for (int i = outBytes.size(); i < numBytes; i++) {
+            outBytes.add(bytes[i]);
+        }
+        return ArrayUtils.toPrimitive(outBytes.toArray(new Byte[outBytes.size()]));
     }
 
     public long getSrcPort() {

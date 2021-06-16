@@ -39,6 +39,10 @@ public class IntMetadataHeader {
         this.bytes = bytes.clone();
     }
 
+    public byte[] getBytes() {
+        return this.bytes.clone();
+    }
+
     public int getVersion() {
         return ByteUtils.getIntFromNibble(bytes[0], true);
     }

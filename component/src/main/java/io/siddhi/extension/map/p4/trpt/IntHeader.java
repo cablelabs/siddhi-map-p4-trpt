@@ -16,6 +16,10 @@
 package io.siddhi.extension.map.p4.trpt;
 
 import com.google.gson.JsonObject;
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Responsible for extracting the bytes that represent INT header values into usable values.
@@ -43,6 +47,20 @@ public class IntHeader {
                 ByteUtils.getBytesFrag(bytes1, byteIndex, bytes.length - byteIndex));
 
         lastIndex = byteIndex + mdStackHdr.getLastIndex();
+    }
+
+    public byte[] getBytes() {
+        final List<Byte> outBytes = new ArrayList<>();
+        for (final byte trptByte : shimHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        for (final byte trptByte : mdHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        for (final byte trptByte : mdStackHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        return ArrayUtils.toPrimitive(outBytes.toArray(new Byte[outBytes.size()]));
     }
 
     public JsonObject toJson() {
