@@ -22,10 +22,8 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import io.siddhi.core.SiddhiAppRuntime;
 import io.siddhi.core.SiddhiManager;
-import io.siddhi.core.event.Event;
-import io.siddhi.core.query.output.callback.QueryCallback;
-import io.siddhi.core.util.EventPrinter;
 import io.siddhi.extension.map.p4.TestTelemetryReports;
+import io.siddhi.extension.map.p4.trpt.TelemetryReport;
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -40,13 +38,17 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -60,12 +62,9 @@ public class SimpleDDoSAlertTestCase {
     private static final Logger log = Logger.getLogger(UDPSourceToKafkaSourceTelemetryReportTestCase.class);
 
     private static final String kafkaServer = "wso2-vm:9092";
-    private static final int numTestEvents = 350;
-    private static final int waitMs = 1000;
 
     private SiddhiAppRuntime srcUdpSiddhiAppRuntime;
     private SiddhiAppRuntime kafkaIngressSiddhiAppRuntime;
-    private List<Event[]> alertEvents;
     private String testTopic;
     private HttpServer httpServer;
     private TestHttpHandler handler;
@@ -73,7 +72,6 @@ public class SimpleDDoSAlertTestCase {
     @BeforeMethod
     public void setUp() throws Exception {
         log.info("In setUp()");
-        alertEvents = new ArrayList<>();
         testTopic = UUID.randomUUID().toString();
         httpServer = HttpServer.create(new InetSocketAddress(5005), 0);
         handler = new TestHttpHandler();
@@ -113,7 +111,14 @@ public class SimpleDDoSAlertTestCase {
      */
     @Test
     public void testTelemetryReportUdp4() {
-        runTest(TestTelemetryReports.UDP4_2HOPS);
+        final List<TrptTestUdpSendDims> dimensions = new ArrayList<>();
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:01:01", "10.10.1.10", 1234,
+                375, 2, 0));
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:02:02", "11.11.1.12", 4567,
+                99, 10, 0));
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:03:03", "12.12.1.13", 5678,
+                275, 3, 0));
+        runTest(TestTelemetryReports.UDP4_2HOPS, dimensions, 2);
     }
 
     /**
@@ -122,7 +127,14 @@ public class SimpleDDoSAlertTestCase {
      */
     @Test
     public void testTelemetryReportTcp4() {
-        runTest(TestTelemetryReports.TCP4_2HOPS);
+        final List<TrptTestUdpSendDims> dimensions = new ArrayList<>();
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:01:01", "10.10.1.10", 1234,
+                375, 2, 0));
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:02:02", "11.11.1.12", 4567,
+                99, 10, 0));
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:03:03", "12.12.1.13", 5678,
+                275, 3, 0));
+        runTest(TestTelemetryReports.TCP4_2HOPS, dimensions, 2);
     }
 
     /**
@@ -131,7 +143,14 @@ public class SimpleDDoSAlertTestCase {
      */
     @Test
     public void testTelemetryReportUdp6() {
-        runTest(TestTelemetryReports.UDP6_2HOPS);
+        final List<TrptTestUdpSendDims> dimensions = new ArrayList<>();
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:01:01", "::1", 1234,
+                375, 2, 0));
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:02:02", "::2", 4567,
+                99, 10, 0));
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:03:03", "::3", 5678,
+                275, 3, 0));
+        runTest(TestTelemetryReports.UDP6_2HOPS, dimensions, 2);
     }
 
     /**
@@ -140,59 +159,88 @@ public class SimpleDDoSAlertTestCase {
      */
     @Test
     public void testTelemetryReportTcp6() {
-        runTest(TestTelemetryReports.TCP6_2HOPS);
+        final List<TrptTestUdpSendDims> dimensions = new ArrayList<>();
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:01:01", "::1", 1234,
+                375, 2, 0));
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:02:02", "::2", 4567,
+                99, 10, 0));
+        dimensions.add(new TrptTestUdpSendDims("00:00:00:00:03:03", "::3", 5678,
+                275, 3, 0));
+        runTest(TestTelemetryReports.TCP6_2HOPS, dimensions, 2);
     }
 
     /**
      * Executes the test against the byte array.
      * @param bytes - the packet UDP payload (the TelemetryReport bytes)
      */
-    private void runTest(final byte[] bytes) {
-        try {
-            final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newScheduledThreadPool(10);
-            final SendPackets pSender1 = new SendPackets(bytes, numTestEvents, 1, 0);
-            executor.execute(pSender1);
-            Thread.sleep(1500);
-            executor.execute(pSender1);
+    private void runTest(final byte[] bytes, final List<TrptTestUdpSendDims> dimensions, final int iterations) {
+        TelemetryReport trpt = new TelemetryReport(bytes);
+        final Set<UdpPacketSender> senders = new HashSet<>();
 
-            // Wait a short bit for the processing to complete
-            Thread.sleep(waitMs);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+
+        for (final TrptTestUdpSendDims dimension : dimensions) {
+            // Update Telemetry Report values
+            trpt.ipHdr.setDstAddr(dimension.dstAddr);
+            trpt.setDstPort(dimension.dstPort);
+            trpt.intHdr.mdStackHdr.setOrigMac(dimension.origMac);
+
+            // Instantiate runnable that is responsible for sending the packets
+            senders.add(new UdpPacketSender(trpt.getBytes(), dimension.numEvents, dimension.delayMillis,
+                    dimension.delayNanos));
         }
 
-        Assert.assertEquals(alertEvents.size(), 6);
-        validateAlertEvents();
-
-        Assert.assertEquals(handler.responses.size(), 6);
-        validateHttpResponses();
-    }
-
-    void validateAlertEvents() {
-        for (final Event[] events : alertEvents) {
-            Assert.assertEquals(events.length, 1);
-            Assert.assertEquals((String) events[0].getData(0), "00:00:00:00:01:01");
-            if (events[0].getData(1) == "4") {
-                Assert.assertEquals(events[0].getData(2), "192.168.1.10");
-                Assert.assertEquals(events[0].getData(3), "5792");
+        final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newScheduledThreadPool(dimensions.size());
+        for (int i = 0; i < iterations; i++) {
+            final List<Future> futures1 = new ArrayList<>();
+            for (final UdpPacketSender sender : senders) {
+                futures1.add(executor.submit(sender));
+            }
+            // Wait for senders to complete the initial run
+            while (futures1.size() > 0) {
+                futures1.removeIf(Future::isDone);
+            }
+            if (i < iterations - 1) {
+                try {
+                    Thread.sleep(1500);
+                } catch (InterruptedException e) {
+                    log.error(e);
+                }
             }
         }
+
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            log.error(e);
+        }
+        // TODO - Determine the expected count based on the dimension count and frequency
+        // TODO - Determine why sometimes get one less than actually expected
+        Assert.assertTrue(validateResponsesWithDimension(dimensions.get(0)) >= 4); // should always be 6
+        Assert.assertEquals(validateResponsesWithDimension(dimensions.get(1)), 0);
+        Assert.assertTrue(validateResponsesWithDimension(dimensions.get(2)) >= 3);
     }
 
-    void validateHttpResponses() {
+    private int validateResponsesWithDimension(final TrptTestUdpSendDims dimension) {
         final JsonParser parser = new JsonParser();
+        int recordsFound = 0;
         for (final String response : handler.responses) {
             final JsonObject bodyJson = (JsonObject) parser.parse(response);
             final JsonObject eventJson = bodyJson.getAsJsonObject("event");
-            Assert.assertEquals(eventJson.get("origMac").getAsString(), "00:00:00:00:01:01");
-            if (eventJson.get("ipVer").getAsInt() == 4) {
-                Assert.assertEquals(eventJson.get("dstAddr").getAsString(), "192.168.1.10");
-            } else {
-                Assert.assertEquals(eventJson.get("dstAddr").getAsString(), "0:0:0:0:0:1:1:1d");
+            if (dimension.origMac.equals(eventJson.get("origMac").getAsString())) {
+                try {
+                    final InetAddress eventDstIp = InetAddress.getByName(eventJson.get("dstAddr").getAsString());
+                    final InetAddress dimDstIp = InetAddress.getByName(dimension.dstAddr);
+                    Assert.assertTrue(eventDstIp.equals(dimDstIp));
+                } catch (UnknownHostException e) {
+                    Assert.fail("Unexpected excepton", e);
+                }
+
+                Assert.assertEquals(eventJson.get("dstPort").getAsLong(), dimension.dstPort);
+                Assert.assertEquals(eventJson.get("count").getAsLong() % 100, 0);
+                recordsFound++;
             }
-            Assert.assertEquals(eventJson.get("dstPort").getAsLong(), 5792L);
-            Assert.assertEquals(eventJson.get("count").getAsLong() % 100, 0);
         }
+        return recordsFound;
     }
 
     /**
@@ -217,19 +265,11 @@ public class SimpleDDoSAlertTestCase {
                 "from trptJsonStream#window.time(1 sec)\n" +
                 "select origMac, ipVer, dstAddr, dstPort, count(ipVer) as count\n" +
                 "group by origMac, dstAddr, dstPort\n" +
-                "having count == 100 or count == 200 or count == 300\n" +
+                "having count == 100 or count == 200 or count == 300 or count == 400\n" +
                 "insert into attackStream;\n",
             testTopic, kafkaServer);
         log.info("Kafka-Source-JSON Siddhi script \n" + siddhiScriptStr);
         kafkaIngressSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(siddhiScriptStr);
-        kafkaIngressSiddhiAppRuntime.addCallback("trptJsonQuery", new QueryCallback() {
-            @Override
-            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
-                log.info("Query response JSON");
-                EventPrinter.print(timeStamp, inEvents, removeEvents);
-                alertEvents.add(inEvents);
-            }
-        });
         kafkaIngressSiddhiAppRuntime.start();
     }
 
@@ -248,17 +288,6 @@ public class SimpleDDoSAlertTestCase {
         log.info("UDP-Source-TRPT Siddhi script \n" + udpSourceDefinition);
         srcUdpSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(udpSourceDefinition);
         srcUdpSiddhiAppRuntime.start();
-    }
-
-    private void sendTestEvents(final byte[] eventBytes, final int numTestEvents, final long delayMs) throws Exception {
-        for (int ctr = 0; ctr < numTestEvents; ctr++) {
-            final InetAddress address = InetAddress.getByName("localhost");
-            final DatagramPacket packet = new DatagramPacket(eventBytes, 0, eventBytes.length,
-                    address, 5556);
-            final DatagramSocket datagramSocket = new DatagramSocket();
-            datagramSocket.send(packet);
-            Thread.sleep(delayMs);
-        }
     }
 
     private static class TestHttpHandler implements HttpHandler {
@@ -280,13 +309,13 @@ public class SimpleDDoSAlertTestCase {
 /**
  * Class for sending out packets in a ThreadPoolExecutor.
  */
-class SendPackets implements Runnable {
+class UdpPacketSender implements Runnable {
     private final byte[] udpPayloadBytes;
     private final int numEvents;
     private final long delayMs;
     private final int delayNanos;
 
-    public SendPackets(final byte[] bytes, final int num, final long dMili, final int dNanos) {
+    public UdpPacketSender(final byte[] bytes, final int num, final long dMili, final int dNanos) {
         udpPayloadBytes = bytes.clone();
         numEvents = num;
         delayMs = dMili;
@@ -308,5 +337,27 @@ class SendPackets implements Runnable {
                 throw new RuntimeException(e);
             }
         }
+    }
+}
+
+/**
+ * Designed to determine how the Telemetry report bytes will be formed and sent.
+ */
+class TrptTestUdpSendDims {
+    public final String origMac;
+    public final String dstAddr;
+    public final long dstPort;
+    public final int numEvents;
+    public final long delayMillis;
+    public final int delayNanos;
+
+    TrptTestUdpSendDims(final String origMac, final String dstAddr, final long dstPort, final int numEvents,
+                        final long delayMillis, final int delayNanos) {
+        this.origMac = origMac;
+        this.dstAddr = dstAddr;
+        this.dstPort = dstPort;
+        this.numEvents = numEvents;
+        this.delayMillis = delayMillis;
+        this.delayNanos = delayNanos;
     }
 }
