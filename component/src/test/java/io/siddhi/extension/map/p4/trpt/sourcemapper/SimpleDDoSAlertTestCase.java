@@ -188,7 +188,7 @@ public class SimpleDDoSAlertTestCase {
                 Assert.assertEquals(eventJson.get("dstAddr").getAsString(), "0:0:0:0:0:1:1:1d");
             }
             Assert.assertEquals(eventJson.get("dstPort").getAsLong(), 5792L);
-            Assert.assertTrue(eventJson.get("count").getAsLong() % 100 == 0);
+            Assert.assertEquals(eventJson.get("count").getAsLong() % 100, 0);
         }
     }
 

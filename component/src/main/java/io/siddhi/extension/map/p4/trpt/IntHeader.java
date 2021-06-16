@@ -27,22 +27,20 @@ public class IntHeader {
     public static final String INT_HDR_MD_HDR_KEY = "mdHdr";
     public static final String INT_HDR_MD_STACK_HDR_KEY = "mdStackHdr";
 
-    private final byte[] bytes;
-
     public final IntShimHeader shimHdr;
     public final IntMetadataHeader mdHdr;
-    public final IntMetataStackHeader mdStackHdr;
+    public final IntMetadataStackHeader mdStackHdr;
     public final int lastIndex;
 
     public IntHeader(byte[] bytes) {
-        this.bytes = bytes.clone();
+        final byte[] bytes1 = bytes.clone();
         int byteIndex = 0;
-        shimHdr = new IntShimHeader(ByteUtils.getBytesFrag(this.bytes, byteIndex, 4));
+        shimHdr = new IntShimHeader(ByteUtils.getBytesFrag(bytes1, byteIndex, 4));
         byteIndex += 4;
-        mdHdr = new IntMetadataHeader(ByteUtils.getBytesFrag(this.bytes, byteIndex, 12));
+        mdHdr = new IntMetadataHeader(ByteUtils.getBytesFrag(bytes1, byteIndex, 12));
         byteIndex += 12;
-        mdStackHdr = new IntMetataStackHeader(shimHdr.getLength() - INT_SHIM_SIZE,
-                ByteUtils.getBytesFrag(this.bytes, byteIndex, bytes.length - byteIndex));
+        mdStackHdr = new IntMetadataStackHeader(shimHdr.getLength() - INT_SHIM_SIZE,
+                ByteUtils.getBytesFrag(bytes1, byteIndex, bytes.length - byteIndex));
 
         lastIndex = byteIndex + mdStackHdr.getLastIndex();
     }
