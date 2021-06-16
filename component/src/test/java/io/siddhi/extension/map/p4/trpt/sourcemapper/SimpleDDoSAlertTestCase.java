@@ -15,7 +15,8 @@
 
 package io.siddhi.extension.map.p4.trpt.sourcemapper;
 
-import com.sun.net.httpserver.HttpContext;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -25,6 +26,7 @@ import io.siddhi.core.event.Event;
 import io.siddhi.core.query.output.callback.QueryCallback;
 import io.siddhi.core.util.EventPrinter;
 import io.siddhi.extension.map.p4.TestTelemetryReports;
+import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.log4j.Logger;
@@ -33,10 +35,12 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,15 +59,15 @@ public class SimpleDDoSAlertTestCase {
     private static final Logger log = Logger.getLogger(UDPSourceToKafkaSourceTelemetryReportTestCase.class);
 
     private static final String kafkaServer = "wso2-vm:9092";
-    private static final int numTestEvents = 200;
-    private static final int waitMs = 500;
+    private static final int numTestEvents = 350;
+    private static final int waitMs = 1000;
 
     private SiddhiAppRuntime srcUdpSiddhiAppRuntime;
     private SiddhiAppRuntime kafkaIngressSiddhiAppRuntime;
     private List<Event[]> alertEvents;
     private String testTopic;
     private HttpServer httpServer;
-    private MyHttpHandler handler;
+    private TestHttpHandler handler;
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -71,7 +75,7 @@ public class SimpleDDoSAlertTestCase {
         alertEvents = new ArrayList<>();
         testTopic = UUID.randomUUID().toString();
         httpServer = HttpServer.create(new InetSocketAddress(5005), 0);
-        handler = new MyHttpHandler();
+        handler = new TestHttpHandler();
         httpServer.createContext("/attack", handler);
         httpServer.setExecutor(Executors.newFixedThreadPool(1));
         httpServer.start();
@@ -156,12 +160,12 @@ public class SimpleDDoSAlertTestCase {
 
         // TODO - make more dynamic
 //        Assert.assertEquals(alertEvents.size(), 1);
-        Assert.assertEquals(alertEvents.size(), 2);
+        Assert.assertEquals(alertEvents.size(), 6);
         validateAlertEvents();
 
         // TODO - HTTP requests with keyvalue mapping (maybe JSON encoded body too) not working with HttpSink
         //  (and hacked version HttpSinkFix)
-        Assert.assertEquals(handler.responses.size(), 2);
+        Assert.assertEquals(handler.responses.size(), 6);
         validateHttpResponses();
     }
 
@@ -177,9 +181,18 @@ public class SimpleDDoSAlertTestCase {
     }
 
     void validateHttpResponses() {
+        final JsonParser parser = new JsonParser();
         for (final String response : handler.responses) {
-            Assert.assertTrue(response.contains("00:00:00:00:01:01"));
-            Assert.assertTrue(response.contains("5792"));
+            final JsonObject bodyJson = (JsonObject) parser.parse(response);
+            final JsonObject eventJson = bodyJson.getAsJsonObject("event");
+            Assert.assertEquals(eventJson.get("origMac").getAsString(), "00:00:00:00:01:01");
+            if (eventJson.get("ipVer").getAsInt() == 4) {
+                Assert.assertEquals(eventJson.get("dstAddr").getAsString(), "192.168.1.10");
+            } else {
+                Assert.assertEquals(eventJson.get("dstAddr").getAsString(), "0:0:0:0:0:1:1:1d");
+            }
+            Assert.assertEquals(eventJson.get("dstPort").getAsLong(), 5792L);
+            Assert.assertTrue(eventJson.get("count").getAsLong() % 100 == 0);
         }
     }
 
@@ -198,14 +211,14 @@ public class SimpleDDoSAlertTestCase {
                     "@attributes(origMac='intHdr.mdStackHdr.origMac', ipVer='ipHdr.version',\n" +
                     "dstAddr='ipHdr.dstAddr', dstPort='dstPort')))\n" +
             "define stream trptJsonStream (origMac string, ipVer int, dstAddr string, dstPort long);\n" +
-            "@sink(type='http-fix', publisher.url='http://localhost:5005/attack', method='POST',\n" +
-                "headers='trp:headers', @map(type='keyvalue'))\n" +
+            "@sink(type='http', publisher.url='http://localhost:5005/attack', method='POST',\n" +
+                "headers='trp:headers', @map(type='json'))\n" +
             "define stream attackStream (origMac string, ipVer int, dstAddr string, dstPort long, count long);\n" +
             "@info(name = 'trptJsonQuery')\n" +
                 "from trptJsonStream#window.time(1 sec)\n" +
                 "select origMac, ipVer, dstAddr, dstPort, count(ipVer) as count\n" +
                 "group by origMac, dstAddr, dstPort\n" +
-                "having count == 100\n" +
+                "having count == 100 or count == 200 or count == 300\n" +
                 "insert into attackStream;\n",
             testTopic, kafkaServer);
         log.info("Kafka-Source-JSON Siddhi script \n" + siddhiScriptStr);
@@ -249,21 +262,19 @@ public class SimpleDDoSAlertTestCase {
         }
     }
 
-    private static class MyHttpHandler implements HttpHandler {
+    private static class TestHttpHandler implements HttpHandler {
 
         public final List<String> responses = new ArrayList<>();
 
         @Override
         public void handle(HttpExchange httpExchange) {
-            // TODO - need to figure out why HttpSink is not forming the POST call properly
-            log.info("httpExchange request method - " + httpExchange.getRequestMethod());
-            log.info("httpExchange request URI - " + httpExchange.getRequestURI());
-            final HttpContext context = httpExchange.getHttpContext();
-            log.info("httpExchange request context attributes - " + context.getAttributes());
-            log.info("httpExchange request context path - " + context.getPath());
-            responses.add(httpExchange.getRequestURI().toString());
+            try {
+                final String text = IOUtils.toString(httpExchange.getRequestBody(), StandardCharsets.UTF_8);
+                responses.add(text);
+            } catch (IOException e) {
+                log.error("Unexpected error extracting HTTP request body");
+            }
         }
     }
-
 }
 
