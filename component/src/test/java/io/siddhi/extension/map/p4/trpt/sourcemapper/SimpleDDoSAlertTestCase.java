@@ -158,13 +158,9 @@ public class SimpleDDoSAlertTestCase {
             throw new RuntimeException(e);
         }
 
-        // TODO - make more dynamic
-//        Assert.assertEquals(alertEvents.size(), 1);
         Assert.assertEquals(alertEvents.size(), 6);
         validateAlertEvents();
 
-        // TODO - HTTP requests with keyvalue mapping (maybe JSON encoded body too) not working with HttpSink
-        //  (and hacked version HttpSinkFix)
         Assert.assertEquals(handler.responses.size(), 6);
         validateHttpResponses();
     }
