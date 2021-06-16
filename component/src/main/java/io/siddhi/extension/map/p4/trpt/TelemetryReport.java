@@ -98,6 +98,4 @@ public class TelemetryReport {
 
         return outJson;
     }
-
 }
-
