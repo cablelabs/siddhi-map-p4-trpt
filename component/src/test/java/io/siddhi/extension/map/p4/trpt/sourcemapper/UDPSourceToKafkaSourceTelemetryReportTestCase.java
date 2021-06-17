@@ -58,7 +58,7 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
     private List<Event[]> kafkaIngressEvents;
     private String testTopic;
     private final String kafkaServer = "localhost:9092";
-    private static final int numTestEvents = 1000;
+    private static final int numTestEvents = 500;
     private static final int waitMs = 1000;
 
     @BeforeMethod
