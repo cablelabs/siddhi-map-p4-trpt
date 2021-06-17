@@ -22,8 +22,8 @@
             dstAddr='ipHdr.dstAddr', dstPort='dstPort')))
 define stream trptJsonStream (origMac string, ipVer int, dstAddr string, dstPort long);
 
-@sink(type='http-fix', publisher.url='http://localhost:5005/attack', method='POST',
-    headers='trp:headers', @map(type='keyvalue'))
+@sink(type='http', publisher.url='http://localhost:5005/attack', method='POST',
+    headers='trp:headers', @map(type='json'))
 define stream attackStream (origMac string, ipVer int, dstAddr string, dstPort long, count long);
 
 @info(name = 'trptJsonQuery')
