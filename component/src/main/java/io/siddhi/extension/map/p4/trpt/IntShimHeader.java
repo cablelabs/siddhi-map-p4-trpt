@@ -33,6 +33,10 @@ public class IntShimHeader {
         this.bytes = bytes.clone();
     }
 
+    public byte[] getBytes() {
+        return this.bytes.clone();
+    }
+
     public int getType() {
         return ByteUtils.getIntFromNibble(bytes[0], true);
     }

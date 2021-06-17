@@ -46,6 +46,10 @@ public class TelemetryReportHeader {
         this.bytes = bytes.clone();
     }
 
+    public byte[] getBytes() {
+        return this.bytes.clone();
+    }
+
     // The getters to parses through the byte array to extract expected values
     public int getVersion() {
         return ByteUtils.getIntFromNibble(bytes[0], true);

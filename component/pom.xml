@@ -46,6 +46,12 @@
             <artifactId>siddhi-query-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.siddhi.extension.map.json</groupId>
+            <artifactId>siddhi-map-json</artifactId>
+            <version>5.2.1</version>
+            <type>bundle</type>
+        </dependency>
+        <dependency>
             <groupId>com.github.cablelabs</groupId>
             <artifactId>siddhi-io-udp</artifactId>
             <version>master-SNAPSHOT</version>
@@ -71,16 +77,16 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.siddhi.extension.map.binary</groupId>
-            <artifactId>siddhi-map-binary</artifactId>
-            <version>2.1.0</version>
-            <type>bundle</type>
+            <groupId>io.siddhi.extension.io.http</groupId>
+            <artifactId>siddhi-io-http</artifactId>
+            <version>2.3.3</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>io.siddhi.extension.map.json</groupId>
-            <artifactId>siddhi-map-json</artifactId>
-            <version>5.2.1</version>
-            <type>bundle</type>
+            <groupId>io.siddhi.extension.map.keyvalue</groupId>
+            <artifactId>siddhi-map-keyvalue</artifactId>
+            <version>2.1.1</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -146,34 +152,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>jacoco-initialize</id>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                        <configuration>
-                            <destFile>${basedir}/target/coverage-reports/jacoco.exec</destFile>
-                            <propertyName>surefireArgLine</propertyName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>jacoco-site</id>
-                        <phase>post-integration-test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                        <configuration>
-                            <dataFile>${basedir}/target/coverage-reports/jacoco.exec</dataFile>
-                            <outputDirectory>${basedir}/target/coverage-reports/</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
@@ -195,10 +173,6 @@
                         <DynamicImport-Package>*</DynamicImport-Package>
                     </instructions>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

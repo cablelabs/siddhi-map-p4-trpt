@@ -5,6 +5,7 @@
         <classes>
             <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceKafkaSinkTelemetryReportTestCase"/>
             <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceToKafkaSourceTelemetryReportTestCase"/>
+            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.SimpleDDoSAlertTestCase"/>
         </classes>
     </test>
 </suite>

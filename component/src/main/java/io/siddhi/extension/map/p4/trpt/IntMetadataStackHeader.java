@@ -17,6 +17,8 @@ package io.siddhi.extension.map.p4.trpt;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import io.netty.util.internal.MacAddressUtil;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,23 +26,29 @@ import java.util.List;
 /**
  * Responsible for extracting the bytes that represent INT metadata header values into usable values.
  */
-public class IntMetataStackHeader {
+public class IntMetadataStackHeader {
 
     public static final String INT_MD_STACK_ORIG_MAC_KEY = "origMac";
     public static final String INT_MD_STACK_HOPS_KEY = "hops";
 
     private final int numHops;
     private final byte[] bytes;
-    private final String origMac;
     private final int lastHopIndex;
     private final List<Long> hops;
 
-    public IntMetataStackHeader(final int numHops, final byte[] bytes) {
+    public IntMetadataStackHeader(final int numHops, final byte[] bytes) {
         this.numHops = numHops;
         this.bytes = bytes.clone();
         this.lastHopIndex = numHops * 4;
-        this.origMac = ByteUtils.getMacStr(bytes, lastHopIndex);
         this.hops = readHops();
+    }
+
+    public byte[] getBytes() {
+        final List<Byte> outBytes = new ArrayList<>();
+        for (int i = 0; i < getLastIndex(); i++) {
+            outBytes.add(bytes[i]);
+        }
+        return ArrayUtils.toPrimitive(outBytes.toArray(new Byte[outBytes.size()]));
     }
 
     public int getLastIndex() {
@@ -48,7 +56,12 @@ public class IntMetataStackHeader {
     }
 
     public String getOrigMac() {
-        return origMac;
+        return ByteUtils.getMacStr(bytes, lastHopIndex);
+    }
+
+    public void setOrigMac(final String macAddress) {
+        final byte[] macBytes = MacAddressUtil.parseMAC(macAddress);
+        System.arraycopy(macBytes, 0, bytes, lastHopIndex, macBytes.length);
     }
 
     public List<Long> getHops() {

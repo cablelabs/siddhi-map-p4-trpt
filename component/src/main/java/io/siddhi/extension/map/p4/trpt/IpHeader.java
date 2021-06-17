@@ -15,8 +15,11 @@
 
 package io.siddhi.extension.map.p4.trpt;
 
+import com.google.common.net.InetAddresses;
 import com.google.gson.JsonObject;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 
 /**
@@ -34,6 +37,10 @@ public class IpHeader {
 
     public IpHeader(byte[] bytes) {
         this.bytes = bytes.clone();
+    }
+
+    public byte[] getBytes() {
+        return this.bytes.clone();
     }
 
     public short getVer() {
@@ -66,6 +73,18 @@ public class IpHeader {
         return ByteUtils.getInetAddress(bytes, getVer(), byteIndex);
     }
 
+    public void setSrcAddr(final String ipAddr) {
+        final InetAddress inetAddress = InetAddresses.forString(ipAddr);
+        final byte[] ipAddrBytes = inetAddress.getAddress();
+        if (inetAddress instanceof Inet4Address && getVer() == 4) {
+            System.arraycopy(ipAddrBytes, 0, bytes, 12, ipAddrBytes.length);
+        } else if (inetAddress instanceof Inet6Address && getVer() == 6) {
+            System.arraycopy(ipAddrBytes, 0, bytes, 8, ipAddrBytes.length);
+        } else {
+            throw new RuntimeException("Invalid IP address");
+        }
+    }
+
     public InetAddress getDstAddr() {
         final int byteIndex;
         if (getVer() == 4) {
@@ -74,6 +93,18 @@ public class IpHeader {
             byteIndex = 24;
         }
         return ByteUtils.getInetAddress(bytes, getVer(), byteIndex);
+    }
+
+    public void setDstAddr(final String ipAddr) {
+        final InetAddress inetAddress = InetAddresses.forString(ipAddr);
+        final byte[] ipAddrBytes = inetAddress.getAddress();
+        if (inetAddress instanceof Inet4Address && getVer() == 4) {
+            System.arraycopy(ipAddrBytes, 0, bytes, 16, ipAddrBytes.length);
+        } else if (inetAddress instanceof Inet6Address && getVer() == 6) {
+            System.arraycopy(ipAddrBytes, 0, bytes, 24, ipAddrBytes.length);
+        } else {
+            throw new RuntimeException("Invalid IP address");
+        }
     }
 
     public JsonObject toJson() {

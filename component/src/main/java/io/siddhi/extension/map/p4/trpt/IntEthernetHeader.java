@@ -32,6 +32,10 @@ public class IntEthernetHeader {
         this.bytes = bytes.clone();
     }
 
+    public byte[] getBytes() {
+        return this.bytes.clone();
+    }
+
     public String getDstMac() {
         return ByteUtils.getMacStr(bytes, 0);
     }

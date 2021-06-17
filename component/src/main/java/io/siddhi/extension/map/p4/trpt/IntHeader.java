@@ -16,6 +16,10 @@
 package io.siddhi.extension.map.p4.trpt;
 
 import com.google.gson.JsonObject;
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Responsible for extracting the bytes that represent INT header values into usable values.
@@ -27,24 +31,36 @@ public class IntHeader {
     public static final String INT_HDR_MD_HDR_KEY = "mdHdr";
     public static final String INT_HDR_MD_STACK_HDR_KEY = "mdStackHdr";
 
-    private final byte[] bytes;
-
     public final IntShimHeader shimHdr;
     public final IntMetadataHeader mdHdr;
-    public final IntMetataStackHeader mdStackHdr;
+    public final IntMetadataStackHeader mdStackHdr;
     public final int lastIndex;
 
     public IntHeader(byte[] bytes) {
-        this.bytes = bytes.clone();
+        final byte[] bytes1 = bytes.clone();
         int byteIndex = 0;
-        shimHdr = new IntShimHeader(ByteUtils.getBytesFrag(this.bytes, byteIndex, 4));
+        shimHdr = new IntShimHeader(ByteUtils.getBytesFrag(bytes1, byteIndex, 4));
         byteIndex += 4;
-        mdHdr = new IntMetadataHeader(ByteUtils.getBytesFrag(this.bytes, byteIndex, 12));
+        mdHdr = new IntMetadataHeader(ByteUtils.getBytesFrag(bytes1, byteIndex, 12));
         byteIndex += 12;
-        mdStackHdr = new IntMetataStackHeader(shimHdr.getLength() - INT_SHIM_SIZE,
-                ByteUtils.getBytesFrag(this.bytes, byteIndex, bytes.length - byteIndex));
+        mdStackHdr = new IntMetadataStackHeader(shimHdr.getLength() - INT_SHIM_SIZE,
+                ByteUtils.getBytesFrag(bytes1, byteIndex, bytes.length - byteIndex));
 
         lastIndex = byteIndex + mdStackHdr.getLastIndex();
+    }
+
+    public byte[] getBytes() {
+        final List<Byte> outBytes = new ArrayList<>();
+        for (final byte trptByte : shimHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        for (final byte trptByte : mdHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        for (final byte trptByte : mdStackHdr.getBytes()) {
+            outBytes.add(trptByte);
+        }
+        return ArrayUtils.toPrimitive(outBytes.toArray(new Byte[outBytes.size()]));
     }
 
     public JsonObject toJson() {

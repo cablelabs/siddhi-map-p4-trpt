@@ -71,12 +71,15 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
                 "@sink(type='kafka', topic='%s', bootstrap.servers='%s'," +
                     "@map(type='text'))\n" +
                 "define stream trptUdpPktStream (trptJson OBJECT);\n", testTopic, kafkaServer);
+
+        // Query used for validating events with the Query callback listener
         final String query =
                 "@info(name = 'query1')\n" +
                 "from trptUdpPktStream\n" +
                 "select *\n" +
                 "insert into outputStream;";
         final SiddhiManager siddhiManager = new SiddhiManager();
+        siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition);
         siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + query);
         siddhiAppRuntime.addCallback("query1", new QueryCallback() {
             @Override
