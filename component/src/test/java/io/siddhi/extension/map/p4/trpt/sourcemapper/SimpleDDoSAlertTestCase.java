@@ -61,7 +61,7 @@ public class SimpleDDoSAlertTestCase {
 
     private static final Logger log = Logger.getLogger(UDPSourceToKafkaSourceTelemetryReportTestCase.class);
 
-    private static final String kafkaServer = "wso2-vm:9092";
+    private static final String kafkaServer = "localhost:9092";
 
     private SiddhiAppRuntime srcUdpSiddhiAppRuntime;
     private SiddhiAppRuntime kafkaIngressSiddhiAppRuntime;
