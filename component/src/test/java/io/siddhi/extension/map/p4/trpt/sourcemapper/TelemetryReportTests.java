@@ -27,8 +27,11 @@ import io.siddhi.extension.map.p4.trpt.IpHeader;
 import io.siddhi.extension.map.p4.trpt.TelemetryReport;
 import io.siddhi.extension.map.p4.trpt.TelemetryReportHeader;
 import io.siddhi.extension.map.p4.trpt.UdpIntHeader;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * Testcase of P4TrptSourceMapper.
@@ -106,6 +109,8 @@ public class TelemetryReportTests {
         // The originating port values
         Assert.assertEquals(6680, trpt.getSrcPort());
         Assert.assertEquals(5792, trpt.getDstPort());
+        Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
+                trpt.getPayload());
     }
 
     @Test
@@ -209,6 +214,8 @@ public class TelemetryReportTests {
         // The originating port values
         Assert.assertEquals(6680, trptJson.get(TelemetryReport.SRC_PORT_KEY).getAsLong());
         Assert.assertEquals(5792, trptJson.get(TelemetryReport.DST_PORT_KEY).getAsLong());
+        Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
+                trptJson.get(TelemetryReport.PAYLOAD).getAsString());
 
         // TODO - Add validation to the JSON string value
         final String telemRptJsonStr = trpt.toJsonStr();
@@ -281,6 +288,8 @@ public class TelemetryReportTests {
         // The originating port values
         Assert.assertEquals(6680, trpt.getSrcPort());
         Assert.assertEquals(5792, trpt.getDstPort());
+        Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
+                trpt.getPayload());
     }
 
     @Test
@@ -349,6 +358,8 @@ public class TelemetryReportTests {
         // The originating port values
         Assert.assertEquals(6680, trpt.getSrcPort());
         Assert.assertEquals(5792, trpt.getDstPort());
+        Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
+                trpt.getPayload());
     }
 
     @Test
@@ -417,6 +428,8 @@ public class TelemetryReportTests {
         // The originating port values
         Assert.assertEquals(6680, trpt.getSrcPort());
         Assert.assertEquals(5792, trpt.getDstPort());
+        Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
+                trpt.getPayload());
     }
 
     @Test
