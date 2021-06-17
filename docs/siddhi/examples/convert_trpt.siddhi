@@ -17,4 +17,4 @@
 @source(type='udp', listen.port='5556', @map(type='p4-trpt'))
 define stream trptUdpPktStream (telemRpt object);
 
-@sink(type='kafka', topic='trptTopic', bootstrap.servers='wso2-vm:9092', @map(type='json'))
+@sink(type='kafka', topic='trptTopic', bootstrap.servers='localhost:9092', @map(type='json'))

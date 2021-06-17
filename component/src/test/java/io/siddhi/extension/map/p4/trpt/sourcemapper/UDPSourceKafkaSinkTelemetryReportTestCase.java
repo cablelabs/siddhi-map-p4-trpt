@@ -57,7 +57,7 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
     private List<Event[]> events;
     private String testTopic;
     private KafkaRunnable consumerRunnable;
-    private static final String kafkaServer = "wso2-vm:9092";
+    private static final String kafkaServer = "localhost:9092";
 
     @BeforeMethod
     public void setUp() {

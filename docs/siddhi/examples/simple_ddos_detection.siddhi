@@ -14,7 +14,7 @@
  */
 
 @app:name('Kafka-Source-JSON')
-@source(type='kafka', topic.list='trptJson', bootstrap.servers='wso2-vm:9092',
+@source(type='kafka', topic.list='trptJson', bootstrap.servers='localhost:9092',
     group.id='test',
     threading.option='single.thread',
     @map(type='p4-trpt-json',
