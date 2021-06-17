@@ -16,10 +16,12 @@
 package io.siddhi.extension.map.p4.trpt;
 
 import com.google.gson.JsonObject;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -34,6 +36,7 @@ public class TelemetryReport {
     public static final String INT_HDR_KEY = "intHdr";
     public static final String SRC_PORT_KEY = "srcPort";
     public static final String DST_PORT_KEY = "dstPort";
+    public static final String PAYLOAD = "payload";
 
     public final TelemetryReportHeader trptHdr;
     public final IntEthernetHeader intEthHdr;
@@ -44,7 +47,7 @@ public class TelemetryReport {
     private final int numBytes;
     private final int srcPortPos;
     private final int dstPortPos;
-    private final int lastBytePos;
+    private final int lastHdrBytePos;
 
     public TelemetryReport(final byte[] trptBytes) {
         bytes = trptBytes.clone();
@@ -67,7 +70,12 @@ public class TelemetryReport {
         intHdr = new IntHeader(ByteUtils.getBytesFrag(trptBytes, byteIndex, bytes.length - byteIndex));
         srcPortPos = byteIndex + intHdr.lastIndex + 2;
         dstPortPos = byteIndex + intHdr.lastIndex + 4;
-        lastBytePos = byteIndex + 4;
+
+        if (intHdr.shimHdr.getNextProto() == 6) {
+            lastHdrBytePos = dstPortPos + 18; // TCP
+        } else {
+            lastHdrBytePos = dstPortPos + 6; // UDP
+        }
     }
 
     public byte[] getBytes() {
@@ -91,7 +99,7 @@ public class TelemetryReport {
         for (int i = outBytes.size(); i < numBytes; i++) {
             outBytes.add(bytes[i]);
         }
-        return ArrayUtils.toPrimitive(outBytes.toArray(new Byte[outBytes.size()]));
+        return ArrayUtils.toPrimitive(outBytes.toArray(new Byte[0]));
     }
 
     public long getSrcPort() {
@@ -112,6 +120,10 @@ public class TelemetryReport {
         System.arraycopy(portBytes, 6, bytes, dstPortPos, 2);
     }
 
+    public String getPayload() {
+        return Hex.encodeHexString(Arrays.copyOfRange(bytes, lastHdrBytePos, bytes.length));
+    }
+
     public String toJsonStr() {
         return this.toJson().toString();
     }
@@ -126,6 +138,7 @@ public class TelemetryReport {
         outJson.add(INT_HDR_KEY, intHdr.toJson());
         outJson.addProperty(SRC_PORT_KEY, getSrcPort());
         outJson.addProperty(DST_PORT_KEY, getDstPort());
+        outJson.addProperty(PAYLOAD, getPayload());
 
         return outJson;
     }
