@@ -88,8 +88,24 @@ public class ByteUtils {
             final String byteHex = String.format("%02x", theBytes[start + i]);
             hexStr.append(byteHex);
         }
+        return Long.parseUnsignedLong(hexStr.toString(), 16);
+    }
 
-        final long out = Long.parseUnsignedLong(hexStr.toString(), 16);
-        return out;
+    public static long getHashFromBytes(final byte[] theBytes, final int start, final int count) {
+        final StringBuffer hexStr = new StringBuffer();
+        for (int i = 0; i < count; i++) {
+            final String byteHex = String.format("%02x", theBytes[start + i]);
+            hexStr.append(byteHex);
+        }
+        return Long.parseUnsignedLong(hexStr.toString(), 16);
+    }
+
+    public static int getIntFromBytes(final byte[] theBytes, final int start, final int count) {
+        final StringBuffer hexStr = new StringBuffer();
+        for (int i = 0; i < count; i++) {
+            final String byteHex = String.format("%02x", theBytes[start + i]);
+            hexStr.append(byteHex);
+        }
+        return Integer.parseUnsignedInt(hexStr.toString(), 16);
     }
 }

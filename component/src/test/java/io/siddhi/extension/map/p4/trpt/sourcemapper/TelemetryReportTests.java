@@ -17,6 +17,7 @@ package io.siddhi.extension.map.p4.trpt.sourcemapper;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.siddhi.extension.map.p4.TestTelemetryReports;
 import io.siddhi.extension.map.p4.trpt.IntEthernetHeader;
 import io.siddhi.extension.map.p4.trpt.IntHeader;
@@ -41,11 +42,58 @@ public class TelemetryReportTests {
     // refer https://github.com/siddhi-io/siddhi-map-xml/tree/master/component/src/test/
 
     @Test
+    public void parseDropRpt() {
+        byte[] origBytes = TestTelemetryReports.DROP_RPT;
+        final TelemetryReport trpt = new TelemetryReport(origBytes);
+        Assert.assertNull(trpt.intEthHdr);
+        Assert.assertNull(trpt.ipHdr);
+        Assert.assertNull(trpt.udpIntHdr);
+        Assert.assertNull(trpt.intHdr);
+        Assert.assertEquals(21587, trpt.trptHdr.getDomainId());
+        Assert.assertEquals(0, trpt.trptHdr.getHardwareId());
+        Assert.assertEquals(2, trpt.trptHdr.getInType());
+        Assert.assertEquals(123, trpt.trptHdr.getNodeId());
+        Assert.assertEquals(9, trpt.trptHdr.getReportLength());
+        Assert.assertEquals(0, trpt.trptHdr.getSequenceId());
+        Assert.assertEquals(2, trpt.trptHdr.getVersion());
+        Assert.assertEquals(7, trpt.trptHdr.getMetadataLength());
+        Assert.assertEquals(0, trpt.trptHdr.getReportType());
+        Assert.assertArrayEquals(origBytes, trpt.getBytes());
+        Assert.assertEquals(0, trpt.getDropCount());
+        Assert.assertEquals(7710404439049675602L, trpt.getDropKey());
+        Assert.assertEquals(1624470281L, trpt.getTimestamp());
+        final String jsonStr = trpt.toJsonStr();
+        Assert.assertNotNull(jsonStr);
+        final JsonObject parsedJson = (JsonObject) new JsonParser().parse(jsonStr);
+
+        Assert.assertTrue(trpt.toJson().equals(parsedJson));
+
+        Assert.assertEquals(21587, trpt.trptHdr.toJson().get("domainId").getAsLong());
+        Assert.assertEquals(0, trpt.trptHdr.toJson().get("hardwareId").getAsLong());
+        Assert.assertEquals(2, trpt.trptHdr.toJson().get("inType").getAsLong());
+        Assert.assertEquals(123, trpt.trptHdr.toJson().get("nodeId").getAsLong());
+        Assert.assertEquals(9, trpt.trptHdr.toJson().get("rptLen").getAsLong());
+        Assert.assertEquals(0, trpt.trptHdr.toJson().get("seqNo").getAsLong());
+        Assert.assertEquals(2, trpt.trptHdr.toJson().get("version").getAsLong());
+        Assert.assertEquals(7, trpt.trptHdr.toJson().get("metaLen").getAsLong());
+        Assert.assertEquals(0, trpt.trptHdr.toJson().get("rptType").getAsLong());
+        Assert.assertArrayEquals(origBytes, trpt.getBytes());
+        Assert.assertEquals(0, trpt.toJson().get("dropCount").getAsLong());
+        final long bigInt = Long.valueOf("7710404439049675602");
+        Assert.assertEquals(bigInt, trpt.toJson().get("dropKey").getAsLong());
+        Assert.assertEquals(1624470281L, trpt.toJson().get("timestamp").getAsLong());
+    }
+
+    @Test
     public void parse2HopIntUdp4Bytes() {
         byte[] origBytes = TestTelemetryReports.UDP4_2HOPS;
         final TelemetryReport trpt = new TelemetryReport(origBytes);
         byte[] convBytes = trpt.getBytes();
         Assert.assertArrayEquals(origBytes, convBytes);
+
+        Assert.assertEquals(0, trpt.getDropCount());
+        Assert.assertEquals(0, trpt.getDropKey());
+        Assert.assertEquals(0, trpt.getTimestamp());
 
         // TRPT Header Values
         Assert.assertEquals(2, trpt.trptHdr.getVersion());
