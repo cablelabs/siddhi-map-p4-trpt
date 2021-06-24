@@ -20,6 +20,9 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -63,7 +66,7 @@ public class TelemetryReport {
     // Fields specific to drop reports
     private final long timestamp;
     private final long dropCount;
-    private final long dropKey;
+    private final String dropKey;
 
     /**
      * Constructor.
@@ -98,7 +101,7 @@ public class TelemetryReport {
             }
             timestamp = 0;
             dropCount = 0;
-            dropKey = 0;
+            dropKey = calcHash();
         } else {
             intEthHdr = null;
             ipHdr = null;
@@ -111,8 +114,7 @@ public class TelemetryReport {
             dropCount = ByteUtils.getLongFromBytes(this.bytes, byteIndex, 4);
             byteIndex += 12;
 
-            final byte[] dropKeyBytes = Arrays.copyOfRange(bytes, byteIndex, byteIndex + 16);
-            dropKey = ByteBuffer.wrap(dropKeyBytes).getLong();
+            dropKey = calcHash();
             byteIndex += 16;
             lastHdrBytePos = byteIndex;
         }
@@ -224,13 +226,56 @@ public class TelemetryReport {
 
     /**
      * Returns the dimensional hash value derived something like below in python.
+     *
+     * For Telemetry Packet Reports, this value will be derived as below:
      * hash_str = "{}|{}|{}|{}".format(mac, port, ipv4, ipv6)
      * hash_hex = hashlib.sha256(hash_str.encode()).hexdigest()
      * hash_int = int(hash_hex[:16], 16)
+     *
+     * For Telemetry Drop Reports, this value will be sent in
      * @return - the count of dropped packets (zero will be returned if this is a drop report)
      */
-    public long getDropKey() {
-        return dropKey;
+    public String getDropKey() {
+        if (trptHdr.getInType() != 2) {
+            return calcHash();
+        } else {
+            return dropKey;
+        }
+    }
+
+    /**
+     * Calculates the drop hash value.
+     * @return - a long derived from the source mac & destination port & IP
+     */
+    private String calcHash() {
+        if (this.ipHdr != null) {
+            String ip4Addr = "";
+            String ip6Addr = "";
+            switch (this.ipHdr.getVer()) {
+                case 4:
+                    ip4Addr = this.ipHdr.getDstAddr().getHostAddress();
+                    ip6Addr = "::";
+                    break;
+                case 6:
+                    ip4Addr = "0.0.0.0";
+                    ip6Addr = this.ipHdr.getDstAddr().getHostAddress();
+                    break;
+                default:
+                    return "";
+            }
+            final String hashString = String.format("%s|%s|%s|%s",
+                    this.intHdr.mdStackHdr.getOrigMac(), this.getDstPort(), ip4Addr, ip6Addr);
+            try {
+                final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+                final byte[] encodedHash = messageDigest.digest(hashString.getBytes(StandardCharsets.UTF_8));
+                final long out = ByteUtils.getLongFromBytes(encodedHash, 0, 8);
+                return Long.toUnsignedString(out);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return "";
+        }
     }
 
     /**
@@ -260,9 +305,9 @@ public class TelemetryReport {
         } else if (trptHdr.getInType() == 2) {
             // Drop Telemetry Report from SDN controller
             outJson.addProperty(TIMESTAMP, timestamp);
-            outJson.addProperty(DROP_KEY, dropKey);
             outJson.addProperty(DROP_COUNT, dropCount);
         }
+        outJson.addProperty(DROP_KEY, getDropKey());
         outJson.addProperty(PAYLOAD, getPayload());
 
         return outJson;
