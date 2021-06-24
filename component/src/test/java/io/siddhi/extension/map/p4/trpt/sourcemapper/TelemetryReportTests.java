@@ -60,7 +60,7 @@ public class TelemetryReportTests {
         Assert.assertEquals(0, trpt.trptHdr.getReportType());
         Assert.assertArrayEquals(origBytes, trpt.getBytes());
         Assert.assertEquals(0, trpt.getDropCount());
-        Assert.assertEquals("", trpt.getDropKey());
+        Assert.assertEquals("7710404439049675602", trpt.getDropKey());
         Assert.assertEquals(1624470281L, trpt.getTimestamp());
         final String jsonStr = trpt.toJsonStr();
         Assert.assertNotNull(jsonStr);
@@ -79,9 +79,9 @@ public class TelemetryReportTests {
         Assert.assertEquals(0, trpt.trptHdr.toJson().get("rptType").getAsLong());
         Assert.assertArrayEquals(origBytes, trpt.getBytes());
         Assert.assertEquals(0, trpt.toJson().get("dropCount").getAsLong());
-        Assert.assertEquals("", trpt.toJson().get("dropKey").getAsString());
+        Assert.assertEquals("7710404439049675602", trpt.toJson().get("dropKey").getAsString());
         Assert.assertEquals(1624470281L, trpt.toJson().get("timestamp").getAsLong());
-        Assert.assertEquals("", trpt.getDropKey());
+        Assert.assertEquals("7710404439049675602", trpt.getDropKey());
     }
 
     @Test

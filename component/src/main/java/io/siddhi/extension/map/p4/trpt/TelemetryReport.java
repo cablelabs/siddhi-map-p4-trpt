@@ -101,7 +101,7 @@ public class TelemetryReport {
             }
             timestamp = 0;
             dropCount = 0;
-            dropKey = calcHash();
+            dropKey = null;
         } else {
             intEthHdr = null;
             ipHdr = null;
@@ -113,8 +113,8 @@ public class TelemetryReport {
             byteIndex += 4;
             dropCount = ByteUtils.getLongFromBytes(this.bytes, byteIndex, 4);
             byteIndex += 12;
-
-            dropKey = calcHash();
+            final byte[] dropKeyBytes = Arrays.copyOfRange(bytes, byteIndex, byteIndex + 16);
+            dropKey = String.valueOf(ByteBuffer.wrap(dropKeyBytes).getLong());
             byteIndex += 16;
             lastHdrBytePos = byteIndex;
         }
@@ -236,11 +236,7 @@ public class TelemetryReport {
      * @return - the count of dropped packets (zero will be returned if this is a drop report)
      */
     public String getDropKey() {
-        if (trptHdr.getInType() != 2) {
-            return calcHash();
-        } else {
-            return dropKey;
-        }
+        return calcHash();
     }
 
     /**
@@ -274,7 +270,7 @@ public class TelemetryReport {
                 throw new RuntimeException(e);
             }
         } else {
-            return "";
+            return dropKey;
         }
     }
 
@@ -302,7 +298,7 @@ public class TelemetryReport {
             outJson.add(INT_HDR_KEY, intHdr.toJson());
             outJson.addProperty(SRC_PORT_KEY, getSrcPort());
             outJson.addProperty(DST_PORT_KEY, getDstPort());
-        } else if (trptHdr.getInType() == 2) {
+        } else {
             // Drop Telemetry Report from SDN controller
             outJson.addProperty(TIMESTAMP, timestamp);
             outJson.addProperty(DROP_COUNT, dropCount);

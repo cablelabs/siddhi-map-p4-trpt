@@ -145,6 +145,26 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
         runTest(TestTelemetryReports.TCP6_2HOPS);
     }
 
+    @Test
+    public void testDropReport() {
+        try {
+            sendTestEvents(TestTelemetryReports.DROP_RPT, 50);
+
+            // Wait a few seconds for the processing to complete
+            Thread.sleep(2000);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // TODO - Determine why we are not getting all
+        log.info("Kafka number of events received - " + consumerRunnable.events.size());
+        Assert.assertTrue(consumerRunnable.events.size() <= 50 && consumerRunnable.events.size() >= 45);
+//        for (final String event : consumerRunnable.events) {
+            // TODO - Validate the JSON Drop report here
+//            log.info("The event - " + event);
+//        }
+    }
+
     private void runTest(final byte[] bytes) {
         final int numTestEvents = 50;
         try {
@@ -191,5 +211,4 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
             Assert.assertEquals(21587, trptHdrJson.get(TelemetryReportHeader.TRPT_DOMAIN_ID_KEY).getAsLong());
         }
     }
-
 }
