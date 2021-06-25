@@ -23,6 +23,7 @@ import io.siddhi.annotation.Extension;
 import io.siddhi.core.exception.MappingFailedException;
 import io.siddhi.core.stream.input.source.InputEventHandler;
 import io.siddhi.extension.map.json.sourcemapper.JsonSourceMapper;
+import org.apache.log4j.Logger;
 
 
 /**
@@ -43,6 +44,7 @@ import io.siddhi.extension.map.json.sourcemapper.JsonSourceMapper;
 
 public class P4TrptJsonStringSourceMapper extends JsonSourceMapper {
 
+    private static final Logger log = Logger.getLogger(P4TrptSourceMapper.class);
     private final JsonParser parser = new JsonParser();
 
     @Override
@@ -63,6 +65,7 @@ public class P4TrptJsonStringSourceMapper extends JsonSourceMapper {
             String telemRptStrCleansed = telemRptStr.replace("\\\"", "\"");
             telemRptStrCleansed = telemRptStrCleansed.substring(1);
             telemRptStrCleansed = telemRptStrCleansed.substring(0, telemRptStrCleansed.length() - 1);
+            log.info("Cleansed Telem Rpt JSON" + telemRptStrCleansed);
             super.mapAndProcess(telemRptStrCleansed, inputEventHandler);
         }
     }
