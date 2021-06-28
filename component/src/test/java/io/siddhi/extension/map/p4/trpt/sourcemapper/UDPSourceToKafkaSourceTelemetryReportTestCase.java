@@ -35,9 +35,13 @@ import org.testng.annotations.Test;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -94,48 +98,84 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
     }
 
     /**
-     * Tests to ensure that UDP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out and received
-     * back via Kafka.
+     * Tests to ensure that UDP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out via IPv4
+     * and received back via Kafka.
      */
     @Test
-    public void testTelemetryReportUdp4() {
-        runTest(TestTelemetryReports.UDP4_2HOPS);
+    public void testTelemetryReportUdp4Via4() {
+        runTest(TestTelemetryReports.UDP4_2HOPS, 4);
     }
 
     /**
-     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out and received
-     * back via Kafka.
+     * Tests to ensure that UDP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out via IPv6
+     * and received back via Kafka.
      */
     @Test
-    public void testTelemetryReportTcp4() {
-        runTest(TestTelemetryReports.TCP4_2HOPS);
+    public void testTelemetryReportUdp4Via6() {
+        runTest(TestTelemetryReports.UDP4_2HOPS, 6);
     }
 
     /**
-     * Tests to ensure that UDP IPv6 two hop Telemetry Report packets can be converted to JSON, sent out and received
-     * back via Kafka.
+     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out via IPv4
+     * and received back via Kafka.
      */
     @Test
-    public void testTelemetryReportUdp6() {
-        runTest(TestTelemetryReports.UDP6_2HOPS);
+    public void testTelemetryReportTcp4Via4() {
+        runTest(TestTelemetryReports.TCP4_2HOPS, 4);
     }
 
     /**
-     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out and received
-     * back via Kafka.
+     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out via IPv6
+     * and received back via Kafka.
      */
     @Test
-    public void testTelemetryReportTcp6() {
-        runTest(TestTelemetryReports.TCP6_2HOPS);
+    public void testTelemetryReportTcp4Via6() {
+        runTest(TestTelemetryReports.TCP4_2HOPS, 6);
+    }
+
+    /**
+     * Tests to ensure that UDP IPv6 two hop Telemetry Report packets can be converted to JSON, sent out via IPv4
+     * and received back via Kafka.
+     */
+    @Test
+    public void testTelemetryReportUdp6Via4() {
+        runTest(TestTelemetryReports.UDP6_2HOPS, 4);
+    }
+
+    /**
+     * Tests to ensure that UDP IPv6 two hop Telemetry Report packets can be converted to JSON, sent out via IPv6
+     * and received back via Kafka.
+     */
+    @Test
+    public void testTelemetryReportUdp6Via6() {
+        runTest(TestTelemetryReports.UDP6_2HOPS, 6);
+    }
+
+    /**
+     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out via IPv4
+     * and received back via Kafka.
+     */
+    @Test
+    public void testTelemetryReportTcp6Via4() {
+        runTest(TestTelemetryReports.TCP6_2HOPS, 4);
+    }
+
+    /**
+     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out via IPv4
+     * and received back via Kafka.
+     */
+    @Test
+    public void testTelemetryReportTcp6Via6() {
+        runTest(TestTelemetryReports.TCP6_2HOPS, 6);
     }
 
     /**
      * Executes the test against the byte array.
      * @param bytes - the packet UDP payload (the TelemetryReport bytes)
      */
-    private void runTest(final byte[] bytes) {
+    private void runTest(final byte[] bytes, final int ipVer) {
         try {
-            sendTestEvents(bytes, numTestEvents);
+            sendTestEvents(bytes, numTestEvents, ipVer);
 
             // Wait a short bit for the processing to complete
             Thread.sleep(waitMs);
@@ -217,9 +257,22 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
         srcUdpSiddhiAppRuntime.start();
     }
 
-    private void sendTestEvents(final byte[] eventBytes, final int numTestEvents) throws Exception {
+    private void sendTestEvents(final byte[] eventBytes, final int numTestEvents, final int ipVer) throws Exception {
         for (int ctr = 0; ctr < numTestEvents; ctr++) {
-            final InetAddress address = InetAddress.getByName("localhost");
+            final NetworkInterface netIface = NetworkInterface.getByName("lo");
+            final Enumeration inetAddresses = netIface.getInetAddresses();
+            InetAddress address = null;
+
+            while (inetAddresses.hasMoreElements()) {
+                final InetAddress addr = (InetAddress) inetAddresses.nextElement();
+                if (ipVer == 4 && addr instanceof Inet4Address) {
+                    address = addr;
+                    break;
+                } else if (ipVer == 6 && addr instanceof Inet6Address) {
+                    address = addr;
+                    break;
+                }
+            }
             final DatagramPacket packet = new DatagramPacket(eventBytes, 0, eventBytes.length,
                     address, 5556);
             final DatagramSocket datagramSocket = new DatagramSocket();

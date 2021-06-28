@@ -54,8 +54,7 @@
         <dependency>
             <groupId>com.github.cablelabs</groupId>
             <artifactId>siddhi-io-udp</artifactId>
-<!--            <version>master-SNAPSHOT</version>-->
-            <version>start-udp-server-ipv4-and-6-SNAPSHOT</version>
+            <version>master-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
         <dependency>

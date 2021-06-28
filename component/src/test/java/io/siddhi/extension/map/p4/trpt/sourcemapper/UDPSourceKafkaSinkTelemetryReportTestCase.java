@@ -35,9 +35,13 @@ import org.testng.annotations.Test;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -118,7 +122,7 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
      */
     @Test
     public void testTelemetryReportUdp4() {
-        runTest(TestTelemetryReports.UDP4_2HOPS);
+        runTest(TestTelemetryReports.UDP4_2HOPS, 4);
     }
 
     /**
@@ -126,7 +130,7 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
      */
     @Test
     public void testTelemetryReportTcp4() {
-        runTest(TestTelemetryReports.TCP4_2HOPS);
+        runTest(TestTelemetryReports.TCP4_2HOPS, 4);
     }
 
     /**
@@ -134,7 +138,7 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
      */
     @Test
     public void testTelemetryReportUdp6() {
-        runTest(TestTelemetryReports.UDP6_2HOPS);
+        runTest(TestTelemetryReports.UDP6_2HOPS, 6);
     }
 
     /**
@@ -142,13 +146,13 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
      */
     @Test
     public void testTelemetryReportTcp6() {
-        runTest(TestTelemetryReports.TCP6_2HOPS);
+        runTest(TestTelemetryReports.TCP6_2HOPS, 6);
     }
 
     @Test
-    public void testDropReport() {
+    public void testDropReportIpv4() {
         try {
-            sendTestEvents(TestTelemetryReports.DROP_RPT, 50);
+            sendTestEvents(TestTelemetryReports.DROP_RPT, 50, 4);
 
             // Wait a few seconds for the processing to complete
             Thread.sleep(2000);
@@ -165,10 +169,30 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
 //        }
     }
 
-    private void runTest(final byte[] bytes) {
+    @Test
+    public void testDropReportIpv6() {
+        try {
+            sendTestEvents(TestTelemetryReports.DROP_RPT, 50, 6);
+
+            // Wait a few seconds for the processing to complete
+            Thread.sleep(2000);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // TODO - Determine why we are not getting all
+        log.info("Kafka number of events received - " + consumerRunnable.events.size());
+        Assert.assertTrue(consumerRunnable.events.size() <= 50 && consumerRunnable.events.size() >= 45);
+//        for (final String event : consumerRunnable.events) {
+            // TODO - Validate the JSON Drop report here
+//            log.info("The event - " + event);
+//        }
+    }
+
+    private void runTest(final byte[] bytes, final int ipVer) {
         final int numTestEvents = 50;
         try {
-            sendTestEvents(bytes, numTestEvents);
+            sendTestEvents(bytes, numTestEvents, ipVer);
 
             // Wait a sec for the processing to complete
             Thread.sleep(1000);
@@ -185,9 +209,23 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
         Assert.assertTrue(consumerRunnable.events.size() <= numTestEvents);
     }
 
-    private void sendTestEvents(final byte[] eventBytes, final int numTestEvents) throws Exception {
+    private void sendTestEvents(final byte[] eventBytes, final int numTestEvents, final int ipVer) throws Exception {
         for (int ctr = 0; ctr < numTestEvents; ctr++) {
-            final InetAddress address = InetAddress.getByName("localhost");
+            final NetworkInterface netIface = NetworkInterface.getByName("lo");
+            final Enumeration inetAddresses = netIface.getInetAddresses();
+            InetAddress address = null;
+
+            while (inetAddresses.hasMoreElements()) {
+                final InetAddress addr = (InetAddress) inetAddresses.nextElement();
+                if (ipVer == 4 && addr instanceof Inet4Address) {
+                    address = addr;
+                    break;
+                } else if (ipVer == 6 && addr instanceof Inet6Address) {
+                    address = addr;
+                    break;
+                }
+            }
+
             final DatagramPacket packet = new DatagramPacket(eventBytes, 0, eventBytes.length,
                     address, 5556);
             // TODO - need to get this
