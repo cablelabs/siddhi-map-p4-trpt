@@ -45,10 +45,10 @@ public class TelemetryReportTests {
     public void parseDropRpt() {
         byte[] origBytes = TestTelemetryReports.DROP_RPT;
         final TelemetryReport trpt = new TelemetryReport(origBytes);
-        Assert.assertNull(trpt.intEthHdr);
-        Assert.assertNull(trpt.ipHdr);
-        Assert.assertNull(trpt.udpIntHdr);
-        Assert.assertNull(trpt.intHdr);
+        Assert.assertEquals(trpt.intEthHdr.getBytes().length, 0);
+        Assert.assertEquals(trpt.ipHdr.getBytes().length, 0);
+        Assert.assertEquals(trpt.udpIntHdr.getBytes().length, 0);
+        Assert.assertEquals(trpt.intHdr.getBytes().length, 0);
         Assert.assertEquals(21587, trpt.trptHdr.getDomainId());
         Assert.assertEquals(0, trpt.trptHdr.getHardwareId());
         Assert.assertEquals(2, trpt.trptHdr.getInType());
@@ -91,9 +91,9 @@ public class TelemetryReportTests {
         byte[] convBytes = trpt.getBytes();
         Assert.assertArrayEquals(origBytes, convBytes);
 
-        Assert.assertEquals(0, trpt.getDropCount());
+        Assert.assertEquals(-1, trpt.getDropCount());
         Assert.assertEquals("11051453535652967133", trpt.getDropKey());
-        Assert.assertEquals(0, trpt.getTimestamp());
+        Assert.assertEquals(-1, trpt.getTimestamp());
 
         // TRPT Header Values
         Assert.assertEquals(2, trpt.trptHdr.getVersion());

@@ -99,14 +99,14 @@ public class TelemetryReport {
             } else {
                 lastHdrBytePos = dstPortPos + 6; // UDP
             }
-            timestamp = 0;
-            dropCount = 0;
+            timestamp = -1;
+            dropCount = -1;
             dropKey = null;
         } else {
-            intEthHdr = null;
-            ipHdr = null;
-            udpIntHdr = null;
-            intHdr = null;
+            intEthHdr = new IntEthernetHeader();
+            ipHdr = new IpHeader();
+            udpIntHdr = new UdpIntHeader();
+            intHdr = new IntHeader();
             srcPortPos = 0;
             dstPortPos = 0;
             timestamp = ByteUtils.getLongFromBytes(this.bytes, byteIndex, 4);
@@ -165,6 +165,9 @@ public class TelemetryReport {
      * @return - the port value (zero will be returned if this is a drop report)
      */
     public long getSrcPort() {
+        if (srcPortPos == 0) {
+            return 0;
+        }
         return ByteUtils.getLongFromBytes(bytes, srcPortPos, 2);
     }
 
@@ -185,6 +188,9 @@ public class TelemetryReport {
      * @return - the port value (zero will be returned if this is a drop report)
      */
     public long getDstPort() {
+        if (dstPortPos == 0) {
+            return 0;
+        }
         return ByteUtils.getLongFromBytes(bytes, dstPortPos, 2);
     }
 
@@ -236,6 +242,9 @@ public class TelemetryReport {
      * @return - the count of dropped packets (zero will be returned if this is a drop report)
      */
     public String getDropKey() {
+        if (dropKey != null) {
+            return dropKey;
+        }
         return calcHash();
     }
 
@@ -290,19 +299,14 @@ public class TelemetryReport {
         final JsonObject outJson = new JsonObject();
 
         outJson.add(TRPT_HDR_KEY, trptHdr.toJson());
-        if (trptHdr.getInType() != 2) {
-            // Packet Telemetry Report from switch
-            outJson.add(INT_ETH_HDR_KEY, intEthHdr.toJson());
-            outJson.add(IP_HDR_KEY, ipHdr.toJson());
-            outJson.add(UDP_INT_HDR_KEY, udpIntHdr.toJson());
-            outJson.add(INT_HDR_KEY, intHdr.toJson());
-            outJson.addProperty(SRC_PORT_KEY, getSrcPort());
-            outJson.addProperty(DST_PORT_KEY, getDstPort());
-        } else {
-            // Drop Telemetry Report from SDN controller
-            outJson.addProperty(TIMESTAMP, timestamp);
-            outJson.addProperty(DROP_COUNT, dropCount);
-        }
+        outJson.add(INT_ETH_HDR_KEY, intEthHdr.toJson());
+        outJson.add(IP_HDR_KEY, ipHdr.toJson());
+        outJson.add(UDP_INT_HDR_KEY, udpIntHdr.toJson());
+        outJson.add(INT_HDR_KEY, intHdr.toJson());
+        outJson.addProperty(SRC_PORT_KEY, getSrcPort());
+        outJson.addProperty(DST_PORT_KEY, getDstPort());
+        outJson.addProperty(TIMESTAMP, timestamp);
+        outJson.addProperty(DROP_COUNT, dropCount);
         outJson.addProperty(DROP_KEY, getDropKey());
         outJson.addProperty(PAYLOAD, getPayload());
 

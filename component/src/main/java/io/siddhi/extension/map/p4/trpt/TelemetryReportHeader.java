@@ -52,11 +52,17 @@ public class TelemetryReportHeader {
 
     // The getters to parses through the byte array to extract expected values
     public int getVersion() {
+        if (bytes.length < 1) {
+            return 0;
+        }
         return ByteUtils.getIntFromNibble(bytes[0], true);
     }
 
     public int getHardwareId() {
         // Create 6 bit binary string
+        if (bytes.length < 1) {
+            return 0;
+        }
         int first = bytes[0] & 0xf;
         final String firstByteStr = String.format("%04d", Integer.parseInt(Integer.toBinaryString(first)));
 

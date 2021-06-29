@@ -50,6 +50,9 @@ public class ByteUtils {
     }
 
     public static String getMacStr(final byte[] bytes, final int startIndex) {
+        if (bytes.length < 6) {
+            return "";
+        }
         final StringBuffer out = new StringBuffer();
         for (int i = 0; i < 6; i++) {
             out.append(String.format("%02x", bytes[startIndex + i]));
@@ -83,6 +86,9 @@ public class ByteUtils {
     }
 
     public static long getLongFromBytes(final byte[] theBytes, final int start, final int count) {
+        if (theBytes.length < start + count) {
+            return 0;
+        }
         final StringBuffer hexStr = new StringBuffer();
         for (int i = 0; i < count; i++) {
             final String byteHex = String.format("%02x", theBytes[start + i]);

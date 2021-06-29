@@ -36,6 +36,20 @@ public class IntHeader {
     public final IntMetadataStackHeader mdStackHdr;
     public final int lastIndex;
 
+    /**
+     * Default constructor without any bytes.
+     */
+    public IntHeader() {
+        shimHdr = new IntShimHeader();
+        mdHdr = new IntMetadataHeader();
+        mdStackHdr = new IntMetadataStackHeader();
+        lastIndex = 0;
+    }
+
+    /**
+     * General use constructor.
+     * @param bytes - the byte array representing the report
+     */
     public IntHeader(byte[] bytes) {
         final byte[] bytes1 = bytes.clone();
         int byteIndex = 0;
