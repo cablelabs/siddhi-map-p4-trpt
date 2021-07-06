@@ -318,9 +318,9 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
         Assert.assertEquals(21587L, event.getData()[0]);
 
         if ((Integer) event.getData()[1] == 6) {
-            Assert.assertEquals("\"0:0:0:0:0:1:1:1d\"", event.getData()[2]);
+            Assert.assertEquals("0:0:0:0:0:1:1:1d", event.getData()[2]);
         } else {
-            Assert.assertEquals("\"192.168.1.10\"", event.getData()[2]);
+            Assert.assertEquals("192.168.1.10", event.getData()[2]);
         }
 
         Assert.assertEquals(5792L, event.getData()[3]);

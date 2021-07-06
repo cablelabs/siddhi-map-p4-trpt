@@ -116,7 +116,6 @@ public class P4TrptSourceMapper extends SourceMapper {
         log.debug("Event object class - " + eventObject.getClass().getName());
         log.debug("Event values - " + eventObject.toString());
 
-        final Object[] eventAttr = new Object[attributeMappingList.size()];
         final JsonObject trptJson;
 
         long timestamp = System.currentTimeMillis();
@@ -137,8 +136,10 @@ public class P4TrptSourceMapper extends SourceMapper {
         int ctr = 0;
 
 
+        final Object[] eventAttr = new Object[attributeMappingList.size()];
         for (final AttributeMapping mapping : attributeMappingList) {
             eventAttr[ctr++] = extractField(trptJson, mapping);
+            log.debug("Extracted field " + eventAttr[ctr - 1] + " with mapping " + mapping.getMapping());
         }
         final Event event = new Event(attributeMappingList.size());
         event.setData(eventAttr);
@@ -157,6 +158,8 @@ public class P4TrptSourceMapper extends SourceMapper {
         if (jsonObject == null) {
             throw new MappingFailedException("JSON element is null");
         }
+        log.debug("Extracting jsonObject - " + jsonObject.toString());
+        log.debug("Attribute mapping - " + attrMapping.getMapping());
         if (attrMapping.getMapping().equals("jsonString")) {
             return jsonObject;
         }
@@ -172,7 +175,7 @@ public class P4TrptSourceMapper extends SourceMapper {
             } else {
                 final String contents;
                 try {
-                    contents = thisElem.get(tokens[i]).toString();
+                    contents = thisElem.get(tokens[i]).toString().replaceAll("\"", "");
                 } catch (NullPointerException npe) {
                     throw new MappingFailedException(npe);
                 }
@@ -184,7 +187,7 @@ public class P4TrptSourceMapper extends SourceMapper {
                 return outObj;
             }
         }
-        return null;
+        throw new MappingFailedException("Could locate field denoted by - " + attrMapping.getMapping());
     }
 
     /**
