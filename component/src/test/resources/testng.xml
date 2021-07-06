@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 <suite name="Siddhi-Map-P4Trpt-Test-Suite">
-    <test name="Siddhi-map-p4-trpt-tests" enabled="true" preserve-order="true" parallel="false">
-        <classes>
-            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceKafkaSinkTelemetryReportTestCase"/>
-            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceToKafkaSourceTelemetryReportTestCase"/>
-            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.SimpleDDoSAlertTestCase"/>
-        </classes>
+    <test name="JunitTests" junit="true">
+        <packages>
+            <package name="io.siddhi.extension.map.p4.trpt.*"></package>
+        </packages>
+<!--        <classes>-->
+<!--            <class name="io.siddhi.extension.map.p4.trpt.TelemetryReportJunitTests"></class>-->
+<!--        </classes>-->
+    </test>
+    <test name="Siddhi-map-p4-trpt-tests" enabled="true" parallel="false">
+        <packages>
+            <package name="io.siddhi.extension.map.p4.trpt.sourcemapper.*"></package>
+        </packages>
+<!--        <classes>-->
+<!--            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceKafkaSinkTelemetryReportTestCase"/>-->
+<!--            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceToKafkaSourceTelemetryReportTestCase"/>-->
+<!--            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.SimpleDDoSAlertTestCase"/>-->
+<!--        </classes>-->
     </test>
 </suite>

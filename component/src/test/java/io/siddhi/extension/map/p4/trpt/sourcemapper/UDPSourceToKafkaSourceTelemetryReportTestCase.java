@@ -15,9 +15,7 @@
 
 package io.siddhi.extension.map.p4.trpt.sourcemapper;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.siddhi.core.SiddhiAppRuntime;
 import io.siddhi.core.SiddhiManager;
 import io.siddhi.core.event.Event;
@@ -200,9 +198,9 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
                 "@app:name('Kafka-Source-TRPT')\n" +
                     "@source(type='kafka', topic.list='%s', bootstrap.servers='%s', group.id='test',\n" +
                     "threading.option='single.thread',\n" +
-                        "@map(type='p4-trpt-json',\n" +
+                        "@map(type='p4-trpt',\n" +
                             "@attributes(domainId='telemRptHdr.domainId', ipVer='ipHdr.version',\n" +
-                                "dstAddr='ipHdr.dstAddr', dstPort='dstPort')))\n" +
+                                "dstAddr='ipHdr.dstAddr', dstPort='protoHdr.dstPort')))\n" +
                     "@sink(type='file', file.uri='/tmp/alerts.out', @map(type='json'))\n" +
                     "define stream trptJsonStream (domainId long, ipVer int, dstAddr string, dstPort long);",
                 testTopic, kafkaServer);
@@ -230,23 +228,25 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
      * @param siddhiManager - the Siddhi manager to leverage
      */
     private void createSrcUdpAppRuntime(final SiddhiManager siddhiManager) {
-        final String udpSourceDefinition = String.format(
-                "@app:name('UDP-Source-TRPT')\n" +
-                    "@source(type='udp', listen.port='5556', @map(type='p4-trpt'))\n" +
-                    "@sink(type='kafka', topic='%s', bootstrap.servers='%s', @map(type='json'))\n" +
-                    " define stream trptUdpPktStream (telemRpt object);",
+        final String inStreamDefinition = String.format(
+                "@app:name('Kafka-Sink-TRPT')\n" +
+                    "@source(type='udp', listen.port='5556', @map(type='p4-trpt',\n" +
+                        "\t@attributes(in_type='telemRptHdr.inType', full_json='jsonString')))\n" +
+                    " define stream typeStream (in_type int, full_json object);\n\n" +
+
+                    "@sink(type='kafka', topic='%s', bootstrap.servers='%s', is.binary.message = 'false',\n" +
+                        "\t@map(type='text'))\n" +
+                    "define stream trptPacket (full_json OBJECT);\n\n" +
+
+                    "@info(name = 'TrptPacket')\n" +
+                        "\tfrom typeStream[in_type != 2]\n" +
+                        "\tselect full_json\n" +
+                        "\tinsert into trptPacket;",
                 testTopic, kafkaServer);
 
-        // Query used for validating events with the Query callback listener
-        final String udpSourceQuery =
-                "@info(name = 'sourceQuery')\n" +
-                    "from trptUdpPktStream\n" +
-                    "select *\n" +
-                    "insert into distTrptJson;";
-
-        log.info("UDP-Source-TRPT Siddhi script \n" + udpSourceDefinition + udpSourceQuery);
-        srcUdpSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(udpSourceDefinition + udpSourceQuery);
-        srcUdpSiddhiAppRuntime.addCallback("sourceQuery", new QueryCallback() {
+        log.info("UDP-Source-TRPT Siddhi script \n" + inStreamDefinition);
+        srcUdpSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition);
+        srcUdpSiddhiAppRuntime.addCallback("TrptPacket", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 log.info("Receiving TRPT JSON");
@@ -299,10 +299,7 @@ public class UDPSourceToKafkaSourceTelemetryReportTestCase {
      * @param event - the Telemetry Report JSON Event object to validate
      */
     private void validateTrptJsonEvent(final Event event) {
-        final String eventStr = (String) event.getData()[0];
-        final JsonParser parser = new JsonParser();
-        final JsonElement jsonElement = parser.parse(eventStr);
-        final JsonObject trptJsonObj = jsonElement.getAsJsonObject();
+        final JsonObject trptJsonObj = (JsonObject) event.getData()[0];
         Assert.assertNotNull(trptJsonObj);
         final JsonObject trptHdrJson = trptJsonObj.get("telemRptHdr").getAsJsonObject();
         Assert.assertNotNull(trptHdrJson);

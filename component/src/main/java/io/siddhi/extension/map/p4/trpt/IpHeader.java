@@ -35,17 +35,6 @@ public class IpHeader {
 
     private final byte[] bytes;
 
-    /**
-     * Default constructor without any bytes.
-     */
-    public IpHeader() {
-        this.bytes = new byte[0];
-    }
-
-    /**
-     * General use constructor.
-     * @param bytes - the byte array representing the report
-     */
     public IpHeader(byte[] bytes) {
         this.bytes = bytes.clone();
     }
@@ -55,9 +44,6 @@ public class IpHeader {
     }
 
     public short getVer() {
-        if (bytes.length < 1) {
-            return 0;
-        }
         return (short) ByteUtils.getIntFromNibble(bytes[0], true);
     }
 
@@ -72,10 +58,8 @@ public class IpHeader {
     public int getNextProto() {
         if (getVer() == 4) {
             return bytes[9];
-        } else if (getVer() == 6) {
-            return bytes[6];
         } else {
-            return 0;
+            return bytes[6];
         }
     }
 
@@ -83,10 +67,8 @@ public class IpHeader {
         final int byteIndex;
         if (getVer() == 4) {
            byteIndex = 12;
-        } else if (getVer() == 6) {
-            byteIndex = 8;
         } else {
-            return null;
+            byteIndex = 8;
         }
         return ByteUtils.getInetAddress(bytes, getVer(), byteIndex);
     }
@@ -107,10 +89,8 @@ public class IpHeader {
         final int byteIndex;
         if (getVer() == 4) {
             byteIndex = 16;
-        } else if (getVer() == 6) {
-            byteIndex = 24;
         } else {
-            return null;
+            byteIndex = 24;
         }
         return ByteUtils.getInetAddress(bytes, getVer(), byteIndex);
     }
@@ -133,16 +113,8 @@ public class IpHeader {
         outJson.addProperty(IP_HDR_LEN_KEY, this.getLen());
         outJson.addProperty(IP_HDR_NEXT_PROTO_KEY, this.getNextProto());
         outJson.addProperty(IP_HDR_VER_KEY, this.getVer());
-        if (this.getDstAddr() == null) {
-            outJson.addProperty(IP_HDR_DST_ADDR_KEY, "");
-        } else {
-            outJson.addProperty(IP_HDR_DST_ADDR_KEY, this.getDstAddr().getHostAddress());
-        }
-        if (this.getSrcAddr() == null) {
-            outJson.addProperty(IP_HDR_SRC_ADDR_KEY, "");
-        } else {
-            outJson.addProperty(IP_HDR_SRC_ADDR_KEY, this.getSrcAddr().getHostAddress());
-        }
+        outJson.addProperty(IP_HDR_DST_ADDR_KEY, this.getDstAddr().getHostAddress());
+        outJson.addProperty(IP_HDR_SRC_ADDR_KEY, this.getSrcAddr().getHostAddress());
 
         return outJson;
     }

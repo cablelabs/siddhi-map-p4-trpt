@@ -94,7 +94,7 @@ public class TelemetryReportHeader {
         return ByteUtils.getIntFromNibble(bytes[8], true);
     }
 
-    public long getInType() {
+    public int getInType() {
         return ByteUtils.getIntFromNibble(bytes[8], false);
     }
 

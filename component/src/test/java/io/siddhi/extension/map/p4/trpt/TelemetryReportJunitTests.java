@@ -13,21 +13,12 @@
  * limitations under the License.
  */
 
-package io.siddhi.extension.map.p4.trpt.sourcemapper;
+package io.siddhi.extension.map.p4.trpt;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.siddhi.extension.map.p4.TestTelemetryReports;
-import io.siddhi.extension.map.p4.trpt.IntEthernetHeader;
-import io.siddhi.extension.map.p4.trpt.IntHeader;
-import io.siddhi.extension.map.p4.trpt.IntMetadataHeader;
-import io.siddhi.extension.map.p4.trpt.IntMetadataStackHeader;
-import io.siddhi.extension.map.p4.trpt.IntShimHeader;
-import io.siddhi.extension.map.p4.trpt.IpHeader;
-import io.siddhi.extension.map.p4.trpt.TelemetryReport;
-import io.siddhi.extension.map.p4.trpt.TelemetryReportHeader;
-import io.siddhi.extension.map.p4.trpt.UdpIntHeader;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,7 +28,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Testcase of P4TrptSourceMapper.
  */
-public class TelemetryReportTests {
+public class TelemetryReportJunitTests {
     // To know about the related testcase,
     // refer https://github.com/siddhi-io/siddhi-map-xml/tree/master/component/src/test/
 
@@ -45,10 +36,10 @@ public class TelemetryReportTests {
     public void parseDropRpt() {
         byte[] origBytes = TestTelemetryReports.DROP_RPT;
         final TelemetryReport trpt = new TelemetryReport(origBytes);
-        Assert.assertEquals(trpt.intEthHdr.getBytes().length, 0);
-        Assert.assertEquals(trpt.ipHdr.getBytes().length, 0);
-        Assert.assertEquals(trpt.udpIntHdr.getBytes().length, 0);
-        Assert.assertEquals(trpt.intHdr.getBytes().length, 0);
+        Assert.assertNull(trpt.intEthHdr);
+        Assert.assertNull(trpt.ipHdr);
+        Assert.assertNull(trpt.udpIntHdr);
+        Assert.assertNull(trpt.intHdr);
         Assert.assertEquals(21587, trpt.trptHdr.getDomainId());
         Assert.assertEquals(0, trpt.trptHdr.getHardwareId());
         Assert.assertEquals(2, trpt.trptHdr.getInType());
@@ -59,9 +50,9 @@ public class TelemetryReportTests {
         Assert.assertEquals(7, trpt.trptHdr.getMetadataLength());
         Assert.assertEquals(0, trpt.trptHdr.getReportType());
         Assert.assertArrayEquals(origBytes, trpt.getBytes());
-        Assert.assertEquals(0, trpt.getDropCount());
-        Assert.assertEquals("7710404439049675602", trpt.getDropKey());
-        Assert.assertEquals(1624470281L, trpt.getTimestamp());
+        Assert.assertEquals(0, trpt.dropHdr.getDropCount());
+//        Assert.assertEquals("7710404439049675602", trpt.dropHdr.getDropKey());
+        Assert.assertEquals(1624470281L, trpt.dropHdr.getTimestamp());
         final String jsonStr = trpt.toJsonStr();
         Assert.assertNotNull(jsonStr);
         final JsonObject parsedJson = (JsonObject) new JsonParser().parse(jsonStr);
@@ -78,10 +69,12 @@ public class TelemetryReportTests {
         Assert.assertEquals(7, trpt.trptHdr.toJson().get("metaLen").getAsLong());
         Assert.assertEquals(0, trpt.trptHdr.toJson().get("rptType").getAsLong());
         Assert.assertArrayEquals(origBytes, trpt.getBytes());
-        Assert.assertEquals(0, trpt.toJson().get("dropCount").getAsLong());
-        Assert.assertEquals("7710404439049675602", trpt.toJson().get("dropKey").getAsString());
-        Assert.assertEquals(1624470281L, trpt.toJson().get("timestamp").getAsLong());
-        Assert.assertEquals("7710404439049675602", trpt.getDropKey());
+        final JsonObject dropHdr = (JsonObject) trpt.toJson().get("dropHdr");
+        Assert.assertNotNull(dropHdr);
+        Assert.assertEquals(0, dropHdr.get("dropCount").getAsLong());
+        final String parsedDropKey = dropHdr.get("dropKey").getAsString();
+        Assert.assertTrue(parsedDropKey.equals("6b00dbfc6026a3521bbe0f5d00170000"));
+        Assert.assertEquals(1624470281L, dropHdr.get("timestamp").getAsLong());
     }
 
     @Test
@@ -91,9 +84,7 @@ public class TelemetryReportTests {
         byte[] convBytes = trpt.getBytes();
         Assert.assertArrayEquals(origBytes, convBytes);
 
-        Assert.assertEquals(-1, trpt.getDropCount());
-        Assert.assertEquals("11051453535652967133", trpt.getDropKey());
-        Assert.assertEquals(-1, trpt.getTimestamp());
+        Assert.assertNull(trpt.dropHdr);
 
         // TRPT Header Values
         Assert.assertEquals(2, trpt.trptHdr.getVersion());
@@ -155,8 +146,8 @@ public class TelemetryReportTests {
         Assert.assertTrue(trpt.intHdr.mdStackHdr.getHops().contains((long) 234));
 
         // The originating port values
-        Assert.assertEquals(6680, trpt.getSrcPort());
-        Assert.assertEquals(5792, trpt.getDstPort());
+        Assert.assertEquals(6680, trpt.protoHdr.getSrcPort());
+        Assert.assertEquals(5792, trpt.protoHdr.getDstPort());
         Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
                 trpt.getPayload());
     }
@@ -260,8 +251,10 @@ public class TelemetryReportTests {
 //        Assert.assertTrue(trpt.intHdr.mdStackHdr.getHops().contains((long) 234));
 
         // The originating port values
-        Assert.assertEquals(6680, trptJson.get(TelemetryReport.SRC_PORT_KEY).getAsLong());
-        Assert.assertEquals(5792, trptJson.get(TelemetryReport.DST_PORT_KEY).getAsLong());
+        final JsonObject protoHdrJson = trptJson.getAsJsonObject(TelemetryReport.PROTO_HDR_KEY);
+        Assert.assertNotNull(protoHdrJson);
+        Assert.assertEquals(6680, protoHdrJson.get(ProtoHeader.PROTO_HDR_SRC_PORT_KEY).getAsLong());
+        Assert.assertEquals(5792, protoHdrJson.get(ProtoHeader.PROTO_HDR_DST_PORT_KEY).getAsLong());
         Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
                 trptJson.get(TelemetryReport.PAYLOAD).getAsString());
 
@@ -334,8 +327,8 @@ public class TelemetryReportTests {
         Assert.assertTrue(trpt.intHdr.mdStackHdr.getHops().contains((long) 234));
 
         // The originating port values
-        Assert.assertEquals(6680, trpt.getSrcPort());
-        Assert.assertEquals(5792, trpt.getDstPort());
+        Assert.assertEquals(6680, trpt.protoHdr.getSrcPort());
+        Assert.assertEquals(5792, trpt.protoHdr.getDstPort());
         Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
                 trpt.getPayload());
     }
@@ -404,8 +397,8 @@ public class TelemetryReportTests {
         Assert.assertTrue(trpt.intHdr.mdStackHdr.getHops().contains((long) 234));
 
         // The originating port values
-        Assert.assertEquals(6680, trpt.getSrcPort());
-        Assert.assertEquals(5792, trpt.getDstPort());
+        Assert.assertEquals(6680, trpt.protoHdr.getSrcPort());
+        Assert.assertEquals(5792, trpt.protoHdr.getDstPort());
         Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
                 trpt.getPayload());
     }
@@ -474,8 +467,8 @@ public class TelemetryReportTests {
         Assert.assertTrue(trpt.intHdr.mdStackHdr.getHops().contains((long) 234));
 
         // The originating port values
-        Assert.assertEquals(6680, trpt.getSrcPort());
-        Assert.assertEquals(5792, trpt.getDstPort());
+        Assert.assertEquals(6680, trpt.protoHdr.getSrcPort());
+        Assert.assertEquals(5792, trpt.protoHdr.getDstPort());
         Assert.assertEquals(Hex.encodeHexString("hello transparent-security".getBytes(StandardCharsets.UTF_8)),
                 trpt.getPayload());
     }
@@ -544,20 +537,27 @@ public class TelemetryReportTests {
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "00:00:00:00:01:01");
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "192.168.1.2"); // IP
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "192.168.1.10"); // IP
-        Assert.assertEquals(trpt.getSrcPort(), 6680);
-        Assert.assertEquals(trpt.getDstPort(), 5792);
+        Assert.assertEquals(trpt.protoHdr.getSrcPort(), 6680);
+        Assert.assertEquals(trpt.protoHdr.getDstPort(), 5792);
         Assert.assertEquals(trpt.ipHdr.getVer(), 4);
+        final byte[] origBytes = trpt.getBytes();
 
         // Update values
-        trpt.setSrcPort(2345);
-        trpt.setDstPort(6789);
+        trpt.protoHdr.setSrcPort(2345);
+        byte[] updatedBytes1 = trpt.getBytes();
+        trpt.protoHdr.setDstPort(6789);
+        byte[] updatedBytes2 = trpt.getBytes();
         trpt.ipHdr.setSrcAddr("10.10.1.2");
+        byte[] updatedBytes3 = trpt.getBytes();
         trpt.ipHdr.setDstAddr("10.10.1.10");
+        byte[] updatedBytes4 = trpt.getBytes();
         trpt.intHdr.mdStackHdr.setOrigMac("11:11:11:11:00:00");
+        byte[] updatedBytes5 = trpt.getBytes();
+//        final byte[] updatedBytes = trpt.getBytes();
 
         // Check updated values
-        Assert.assertEquals(trpt.getSrcPort(), 2345);
-        Assert.assertEquals(trpt.getDstPort(), 6789);
+        Assert.assertEquals(trpt.protoHdr.getSrcPort(), 2345);
+        Assert.assertEquals(trpt.protoHdr.getDstPort(), 6789);
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "10.10.1.2");
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "10.10.1.10");
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "11:11:11:11:00:00");
@@ -572,20 +572,20 @@ public class TelemetryReportTests {
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "00:00:00:00:01:01");
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "0:0:0:0:0:1:1:2"); // IP
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "0:0:0:0:0:1:1:1d"); // IP
-        Assert.assertEquals(trpt.getSrcPort(), 6680);
-        Assert.assertEquals(trpt.getDstPort(), 5792);
+        Assert.assertEquals(trpt.protoHdr.getSrcPort(), 6680);
+        Assert.assertEquals(trpt.protoHdr.getDstPort(), 5792);
         Assert.assertEquals(trpt.ipHdr.getVer(), 6);
 
         // Update values
-        trpt.setSrcPort(2345);
-        trpt.setDstPort(6789);
+        trpt.protoHdr.setSrcPort(2345);
+        trpt.protoHdr.setDstPort(6789);
         trpt.ipHdr.setSrcAddr("::1");
         trpt.ipHdr.setDstAddr("::2");
         trpt.intHdr.mdStackHdr.setOrigMac("11:11:11:11:00:00");
 
         // Check updated values
-        Assert.assertEquals(trpt.getSrcPort(), 2345);
-        Assert.assertEquals(trpt.getDstPort(), 6789);
+        Assert.assertEquals(trpt.protoHdr.getSrcPort(), 2345);
+        Assert.assertEquals(trpt.protoHdr.getDstPort(), 6789);
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "0:0:0:0:0:0:0:1");
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "0:0:0:0:0:0:0:2");
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "11:11:11:11:00:00");
@@ -600,20 +600,20 @@ public class TelemetryReportTests {
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "00:00:00:00:01:01");
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "192.168.1.2"); // IP
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "192.168.1.10"); // IP
-        Assert.assertEquals(trpt.getSrcPort(), 6680);
-        Assert.assertEquals(trpt.getDstPort(), 5792);
+        Assert.assertEquals(trpt.protoHdr.getSrcPort(), 6680);
+        Assert.assertEquals(trpt.protoHdr.getDstPort(), 5792);
         Assert.assertEquals(trpt.ipHdr.getVer(), 4);
 
         // Update values
-        trpt.setSrcPort(2345);
-        trpt.setDstPort(6789);
+        trpt.protoHdr.setSrcPort(2345);
+        trpt.protoHdr.setDstPort(6789);
         trpt.ipHdr.setSrcAddr("10.10.1.2");
         trpt.ipHdr.setDstAddr("10.10.1.10");
         trpt.intHdr.mdStackHdr.setOrigMac("11:11:11:11:00:00");
 
         // Check updated values
-        Assert.assertEquals(trpt.getSrcPort(), 2345);
-        Assert.assertEquals(trpt.getDstPort(), 6789);
+        Assert.assertEquals(trpt.protoHdr.getSrcPort(), 2345);
+        Assert.assertEquals(trpt.protoHdr.getDstPort(), 6789);
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "10.10.1.2");
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "10.10.1.10");
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "11:11:11:11:00:00");
@@ -628,20 +628,20 @@ public class TelemetryReportTests {
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "00:00:00:00:01:01");
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "0:0:0:0:0:1:1:2"); // IP
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "0:0:0:0:0:1:1:1d"); // IP
-        Assert.assertEquals(trpt.getSrcPort(), 6680);
-        Assert.assertEquals(trpt.getDstPort(), 5792);
+        Assert.assertEquals(trpt.protoHdr.getSrcPort(), 6680);
+        Assert.assertEquals(trpt.protoHdr.getDstPort(), 5792);
         Assert.assertEquals(trpt.ipHdr.getVer(), 6);
 
         // Update values
-        trpt.setSrcPort(2345);
-        trpt.setDstPort(6789);
+        trpt.protoHdr.setSrcPort(2345);
+        trpt.protoHdr.setDstPort(6789);
         trpt.ipHdr.setSrcAddr("::1");
         trpt.ipHdr.setDstAddr("::2");
         trpt.intHdr.mdStackHdr.setOrigMac("11:11:11:11:00:00");
 
         // Check updated values
-        Assert.assertEquals(trpt.getSrcPort(), 2345);
-        Assert.assertEquals(trpt.getDstPort(), 6789);
+        Assert.assertEquals(trpt.protoHdr.getSrcPort(), 2345);
+        Assert.assertEquals(trpt.protoHdr.getDstPort(), 6789);
         Assert.assertEquals(trpt.ipHdr.getSrcAddr().getHostAddress(), "0:0:0:0:0:0:0:1");
         Assert.assertEquals(trpt.ipHdr.getDstAddr().getHostAddress(), "0:0:0:0:0:0:0:2");
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), "11:11:11:11:00:00");
@@ -649,12 +649,14 @@ public class TelemetryReportTests {
     }
 
     private void validateBytes(final TelemetryReport trpt) {
-        final byte[] newBytes = trpt.getBytes();
-        final TelemetryReport newTrpt = new TelemetryReport(newBytes);
+        final byte[] trptBytes = trpt.getBytes();
+        final TelemetryReport newTrpt = new TelemetryReport(trptBytes);
+        final byte[] newTrptBytes = newTrpt.getBytes();
+
 
         // Validate new object created from the bytes generated from the older
-        Assert.assertEquals(trpt.getSrcPort(), newTrpt.getSrcPort());
-        Assert.assertEquals(trpt.getDstPort(), newTrpt.getDstPort());
+        Assert.assertEquals(trpt.protoHdr.getSrcPort(), newTrpt.protoHdr.getSrcPort());
+        Assert.assertEquals(trpt.protoHdr.getDstPort(), newTrpt.protoHdr.getDstPort());
         Assert.assertEquals(trpt.ipHdr.getSrcAddr(), newTrpt.ipHdr.getSrcAddr());
         Assert.assertEquals(trpt.ipHdr.getDstAddr(), newTrpt.ipHdr.getDstAddr());
         Assert.assertEquals(trpt.intHdr.mdStackHdr.getOrigMac(), newTrpt.intHdr.mdStackHdr.getOrigMac());

@@ -181,7 +181,7 @@ public class SimpleDDoSAlertTestCase {
         for (final TrptTestUdpSendDims dimension : dimensions) {
             // Update Telemetry Report values
             trpt.ipHdr.setDstAddr(dimension.dstAddr);
-            trpt.setDstPort(dimension.dstPort);
+            trpt.protoHdr.setDstPort(dimension.dstPort);
             trpt.intHdr.mdStackHdr.setOrigMac(dimension.origMac);
 
             // Instantiate runnable that is responsible for sending the packets
@@ -215,7 +215,8 @@ public class SimpleDDoSAlertTestCase {
         }
         // TODO - Determine the expected count based on the dimension count and frequency
         // TODO - Determine why sometimes get one less than actually expected
-        Assert.assertTrue(validateResponsesWithDimension(dimensions.get(0)) >= 4); // should always be 6
+        Assert.assertTrue(validateResponsesWithDimension(dimensions.get(0)) >= 4,
+                "dimensions.get(0) - " + dimensions.get(0)); // should always be 6
         Assert.assertEquals(validateResponsesWithDimension(dimensions.get(1)), 0);
         Assert.assertTrue(validateResponsesWithDimension(dimensions.get(2)) >= 3);
     }
@@ -226,9 +227,10 @@ public class SimpleDDoSAlertTestCase {
         for (final String response : handler.responses) {
             final JsonObject bodyJson = (JsonObject) parser.parse(response);
             final JsonObject eventJson = bodyJson.getAsJsonObject("event");
-            if (dimension.origMac.equals(eventJson.get("origMac").getAsString())) {
+            if (dimension.origMac.equals(eventJson.get("origMac").getAsString().replaceAll("\"", ""))) {
                 try {
-                    final InetAddress eventDstIp = InetAddress.getByName(eventJson.get("dstAddr").getAsString());
+                    final InetAddress eventDstIp = InetAddress.getByName(
+                            eventJson.get("dstAddr").getAsString().replaceAll("\"", ""));
                     final InetAddress dimDstIp = InetAddress.getByName(dimension.dstAddr);
                     Assert.assertTrue(eventDstIp.equals(dimDstIp));
                 } catch (UnknownHostException e) {
@@ -253,20 +255,20 @@ public class SimpleDDoSAlertTestCase {
         final String siddhiScriptStr = String.format(
             "@app:name('Kafka-Source-JSON')\n" +
             "@source(type='kafka', topic.list='%s', bootstrap.servers='%s', group.id='test',\n" +
-                "threading.option='single.thread',\n" +
-                "@map(type='p4-trpt-json',\n" +
-                    "@attributes(origMac='intHdr.mdStackHdr.origMac', ipVer='ipHdr.version',\n" +
-                    "dstAddr='ipHdr.dstAddr', dstPort='dstPort')))\n" +
+                "\tthreading.option='single.thread',\n" +
+                "\t@map(type='p4-trpt',\n" +
+                    "\t\t@attributes(origMac='intHdr.mdStackHdr.origMac', ipVer='ipHdr.version',\n" +
+                        "\t\t\tdstAddr='ipHdr.dstAddr', dstPort='protoHdr.dstPort')))\n" +
             "define stream trptJsonStream (origMac string, ipVer int, dstAddr string, dstPort long);\n" +
             "@sink(type='http', publisher.url='http://localhost:5005/attack', method='POST',\n" +
-                "headers='trp:headers', @map(type='json'))\n" +
+                "\theaders='trp:headers', @map(type='json'))\n" +
             "define stream attackStream (origMac string, ipVer int, dstAddr string, dstPort long, count long);\n" +
             "@info(name = 'trptJsonQuery')\n" +
-                "from trptJsonStream#window.time(1 sec)\n" +
-                "select origMac, ipVer, dstAddr, dstPort, count(ipVer) as count\n" +
-                "group by origMac, dstAddr, dstPort\n" +
-                "having count == 100 or count == 200 or count == 300 or count == 400\n" +
-                "insert into attackStream;\n",
+                "\tfrom trptJsonStream#window.time(1 sec)\n" +
+                "\tselect origMac, ipVer, dstAddr, dstPort, count(ipVer) as count\n" +
+                "\tgroup by origMac, dstAddr, dstPort\n" +
+                "\thaving count == 100 or count == 200 or count == 300 or count == 400\n" +
+                "\tinsert into attackStream;\n",
             testTopic, kafkaServer);
         log.info("Kafka-Source-JSON Siddhi script \n" + siddhiScriptStr);
         kafkaIngressSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(siddhiScriptStr);
@@ -281,9 +283,18 @@ public class SimpleDDoSAlertTestCase {
     private void createSrcUdpAppRuntime(final SiddhiManager siddhiManager) {
         final String udpSourceDefinition = String.format(
             "@app:name('UDP-Source-TRPT')\n" +
-                "@source(type='udp', listen.port='5556', @map(type='p4-trpt'))\n" +
-                "@sink(type='kafka', topic='%s', bootstrap.servers='%s', @map(type='json'))\n" +
-                "define stream trptUdpPktStream (telemRpt object);",
+                "@source(type='udp', listen.port='5556', @map(type='p4-trpt',\n" +
+                    "\t@attributes(in_type='telemRptHdr.inType', full_json='jsonString')))\n" +
+                "define stream typeStream (in_type int, full_json object);\n\n" +
+
+                "@sink(type='kafka', topic='%1$s', bootstrap.servers='%2$s', is.binary.message = 'false',\n" +
+                    "\t@map(type='text'))\n" +
+                "define stream trptPacket (full_json OBJECT);\n\n" +
+
+                "@info(name = 'TrptPacket')\n" +
+                    "\tfrom typeStream[in_type != 2]\n" +
+                    "\tselect full_json\n" +
+                    "\tinsert into trptPacket;",
                 testTopic, kafkaServer);
         log.info("UDP-Source-TRPT Siddhi script \n" + udpSourceDefinition);
         srcUdpSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(udpSourceDefinition);

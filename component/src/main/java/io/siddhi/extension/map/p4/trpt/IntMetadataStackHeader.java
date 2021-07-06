@@ -36,20 +36,6 @@ public class IntMetadataStackHeader {
     private final int lastHopIndex;
     private final List<Long> hops;
 
-    /**
-     * Default constructor without any bytes.
-     */
-    public IntMetadataStackHeader() {
-        bytes = new byte[0];
-        numHops = 0;
-        lastHopIndex = 0;
-        hops = new ArrayList<>();
-    }
-
-    /**
-     * General use constructor.
-     * @param bytes - the byte array representing the report
-     */
     public IntMetadataStackHeader(final int numHops, final byte[] bytes) {
         this.numHops = numHops;
         this.bytes = bytes.clone();
@@ -62,14 +48,11 @@ public class IntMetadataStackHeader {
         for (int i = 0; i < getLastIndex(); i++) {
             outBytes.add(bytes[i]);
         }
-        return ArrayUtils.toPrimitive(outBytes.toArray(new Byte[0]));
+        return ArrayUtils.toPrimitive(outBytes.toArray(new Byte[outBytes.size()]));
     }
 
     public int getLastIndex() {
-        if (bytes.length == 0) {
-            return 0;
-        }
-        return lastHopIndex + 6;
+        return lastHopIndex + 8;
     }
 
     public String getOrigMac() {
