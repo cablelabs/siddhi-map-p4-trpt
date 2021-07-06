@@ -28,17 +28,6 @@ public class UdpIntHeader {
 
     private final byte[] bytes;
 
-    /**
-     * Default constructor without any bytes.
-     */
-    public UdpIntHeader() {
-        this.bytes = new byte[0];
-    }
-
-    /**
-     * General use constructor.
-     * @param bytes - the byte array representing the report
-     */
     public UdpIntHeader(byte[] bytes) {
         this.bytes = bytes.clone();
     }

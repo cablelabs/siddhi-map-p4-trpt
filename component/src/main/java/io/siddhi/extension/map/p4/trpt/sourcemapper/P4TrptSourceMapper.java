@@ -15,20 +15,26 @@
 
 package io.siddhi.extension.map.p4.trpt.sourcemapper;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.core.config.SiddhiAppContext;
 import io.siddhi.core.event.Event;
+import io.siddhi.core.exception.MappingFailedException;
 import io.siddhi.core.stream.input.source.AttributeMapping;
 import io.siddhi.core.stream.input.source.InputEventHandler;
 import io.siddhi.core.stream.input.source.SourceMapper;
+import io.siddhi.core.util.AttributeConverter;
 import io.siddhi.core.util.config.ConfigReader;
 import io.siddhi.core.util.transport.OptionHolder;
 import io.siddhi.extension.map.p4.trpt.TelemetryReport;
+import io.siddhi.query.api.definition.Attribute;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -49,6 +55,13 @@ import java.util.List;
 public class P4TrptSourceMapper extends SourceMapper {
 
     private static final Logger log = Logger.getLogger(P4TrptSourceMapper.class);
+    private StreamDefinition streamDefinition;
+    private OptionHolder optionHolder;
+    private List<AttributeMapping> attributeMappingList;
+    private ConfigReader configReader;
+    private SiddhiAppContext siddhiAppContext;
+    private final AttributeConverter attributeConverter = new AttributeConverter();
+    private final JsonParser parser = new JsonParser();
 
     /**
      * The initialization method for {@link SourceMapper}, which will be called before other methods and validate
@@ -64,7 +77,20 @@ public class P4TrptSourceMapper extends SourceMapper {
     public void init(StreamDefinition streamDefinition, OptionHolder optionHolder,
                      List<AttributeMapping> attributeMappingList, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
+        this.streamDefinition = streamDefinition.clone();
+        this.optionHolder = optionHolder;
+        this.attributeMappingList = attributeMappingList;
+        this.configReader = configReader;
+        this.siddhiAppContext = siddhiAppContext;
+    }
 
+    private List<AttributeMapping> getAttrMappings() {
+        final List<AttributeMapping> attrMappings = new ArrayList<>();
+        int pos = 0;
+        attrMappings.add(new AttributeMapping("domainId", pos++, "telemRptHdr.domainId", Attribute.Type.INT));
+        attrMappings.add(new AttributeMapping("hardwareId", pos++, "telemRptHdr.hardwareId", Attribute.Type.INT));
+        attrMappings.add(new AttributeMapping("inType", pos++, "telemRptHdr.inType", Attribute.Type.INT));
+        return attrMappings;
     }
 
     /**
@@ -85,30 +111,80 @@ public class P4TrptSourceMapper extends SourceMapper {
      * @param inputEventHandler     Handler to pass the converted Siddhi Event for processing
      */
     @Override
-    protected void mapAndProcess(Object eventObject, InputEventHandler inputEventHandler) {
-        log.info("Event object class - " + eventObject.getClass().getName());
-        log.info("Event values - " + eventObject.toString());
+    protected void mapAndProcess(Object eventObject, InputEventHandler inputEventHandler)
+            throws MappingFailedException {
+        log.debug("Event object class - " + eventObject.getClass().getName());
+        log.debug("Event values - " + eventObject.toString());
 
-        final TelemetryReport telemetryReport;
+        final Object[] eventAttr = new Object[attributeMappingList.size()];
+        final JsonObject trptJson;
+
         long timestamp = System.currentTimeMillis();
         if (eventObject instanceof ByteBuffer) {
-            telemetryReport = new TelemetryReport(((ByteBuffer) eventObject).array());
+            final TelemetryReport telemetryReport = new TelemetryReport(((ByteBuffer) eventObject).array());
             timestamp = ((ByteBuffer) eventObject).getLong();
+             trptJson = telemetryReport.toJson();
         } else if (eventObject instanceof byte[]) {
-            telemetryReport = new TelemetryReport((byte[]) eventObject);
+            final TelemetryReport telemetryReport = new TelemetryReport((byte[]) eventObject);
+            trptJson = telemetryReport.toJson();
+        } else if (eventObject instanceof String) {
+            String eventString = (String) eventObject;
+            eventString = eventString.substring(eventString.indexOf(':') + 1, eventString.length());
+            trptJson = (JsonObject) parser.parse(eventString);
         } else {
             throw new RuntimeException("Invalid object, cannot continue to process");
         }
-        final Event event = new Event();
-        final Object[] eventObjs = new Object[1];
-        eventObjs[0] = telemetryReport.toJsonStr();
-        event.setData(eventObjs);
+        int ctr = 0;
+
+
+        for (final AttributeMapping mapping : attributeMappingList) {
+            eventAttr[ctr++] = extractField(trptJson, mapping);
+        }
+        final Event event = new Event(attributeMappingList.size());
+        event.setData(eventAttr);
         event.setTimestamp(timestamp);
         try {
             inputEventHandler.sendEvent(event);
         } catch (InterruptedException e) {
             throw new RuntimeException("Unexpected error processing event", e);
+        } catch (Throwable e2) {
+            throw new RuntimeException("Unexpected throwable processing event", e2);
         }
+    }
+
+    private Object extractField(final JsonObject jsonObject, final AttributeMapping attrMapping)
+            throws MappingFailedException {
+        if (jsonObject == null) {
+            throw new MappingFailedException("JSON element is null");
+        }
+        if (attrMapping.getMapping().equals("jsonString")) {
+            return jsonObject;
+        }
+        final String[] tokens = attrMapping.getMapping().split("\\.");
+        JsonObject thisElem = jsonObject;
+        for (int i = 0; i < tokens.length; i++) {
+            if (i < tokens.length - 1) {
+                thisElem = thisElem.getAsJsonObject(tokens[i]);
+                if (thisElem == null) {
+                    throw new MappingFailedException(
+                            "JSON element not found - " + tokens[i] + " for mapping - " + attrMapping.getMapping());
+                }
+            } else {
+                final String contents;
+                try {
+                    contents = thisElem.get(tokens[i]).toString();
+                } catch (NullPointerException npe) {
+                    throw new MappingFailedException(npe);
+                }
+                final Object outObj = attributeConverter.getPropertyValue(contents, attrMapping.getType());
+                if (outObj == null) {
+                    throw new MappingFailedException(
+                            "JSON element not found - " + tokens[i] + " for mapping - " + attrMapping.getMapping());
+                }
+                return outObj;
+            }
+        }
+        return null;
     }
 
     /**

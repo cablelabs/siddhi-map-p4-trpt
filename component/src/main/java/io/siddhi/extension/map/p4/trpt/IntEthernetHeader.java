@@ -28,17 +28,6 @@ public class IntEthernetHeader {
 
     private final byte[] bytes;
 
-    /**
-     * Default constructor without any bytes.
-     */
-    public IntEthernetHeader() {
-        this.bytes = new byte[0];
-    }
-
-    /**
-     * General use constructor.
-     * @param bytes - the byte array representing the report.
-     */
     public IntEthernetHeader(final byte[] bytes) {
         this.bytes = bytes.clone();
     }

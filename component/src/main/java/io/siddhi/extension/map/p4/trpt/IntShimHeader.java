@@ -29,17 +29,6 @@ public class IntShimHeader {
 
     private final byte[] bytes;
 
-    /**
-     * Default constructor without any bytes.
-     */
-    public IntShimHeader() {
-        this.bytes = new byte[0];
-    }
-
-    /**
-     * General use constructor.
-     * @param bytes - the byte array representing the report
-     */
     public IntShimHeader(final byte[] bytes) {
         this.bytes = bytes.clone();
     }
@@ -49,32 +38,20 @@ public class IntShimHeader {
     }
 
     public int getType() {
-        if (bytes.length < 1) {
-            return 0;
-        }
         return ByteUtils.getIntFromNibble(bytes[0], true);
     }
 
     public int getNpt() {
-        if (bytes.length < 1) {
-            return 0;
-        }
         final String byteBitStr = ByteUtils.getBitString(bytes[0]);
         final String theBitsStr = byteBitStr.substring(4, 6);
         return Integer.parseInt(theBitsStr, 2);
     }
 
     public int getLength() {
-        if (bytes.length < 1) {
-            return 0;
-        }
         return bytes[1];
     }
 
     public int getNextProto() {
-        if (bytes.length < 3) {
-            return 0;
-        }
         return bytes[3];
     }
 

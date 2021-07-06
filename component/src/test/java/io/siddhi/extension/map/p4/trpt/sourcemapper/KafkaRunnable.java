@@ -21,6 +21,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.log4j.Logger;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import java.util.Properties;
  */
 class KafkaRunnable implements Runnable {
 
+    private static final Logger log = Logger.getLogger(P4TrptSourceMapper.class);
     final Consumer<Long, String> consumer;
     int numRecordsCount = 0;
     final List<String> events = new ArrayList<>();
@@ -54,9 +56,9 @@ class KafkaRunnable implements Runnable {
             if (consumerRecords.count() != 0) {
                 numRecordsCount += consumerRecords.count();
                 consumerRecords.forEach(record -> {
-                    System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
+                    log.debug(String.format("Consumer Record:(%d, %s, %d, %d)\n",
                             record.key(), record.value(),
-                            record.partition(), record.offset());
+                            record.partition(), record.offset()));
                     events.add(record.value());
                 });
             }
