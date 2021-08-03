@@ -21,7 +21,6 @@ import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.core.config.SiddhiAppContext;
 import io.siddhi.core.event.Event;
-import io.siddhi.core.exception.MappingFailedException;
 import io.siddhi.core.stream.input.source.AttributeMapping;
 import io.siddhi.core.stream.input.source.InputEventHandler;
 import io.siddhi.core.stream.input.source.SourceMapper;
@@ -29,12 +28,10 @@ import io.siddhi.core.util.AttributeConverter;
 import io.siddhi.core.util.config.ConfigReader;
 import io.siddhi.core.util.transport.OptionHolder;
 import io.siddhi.extension.map.p4.trpt.TelemetryReport;
-import io.siddhi.query.api.definition.Attribute;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -55,11 +52,7 @@ import java.util.List;
 public class P4TrptSourceMapper extends SourceMapper {
 
     private static final Logger log = Logger.getLogger(P4TrptSourceMapper.class);
-    private StreamDefinition streamDefinition;
-    private OptionHolder optionHolder;
     private List<AttributeMapping> attributeMappingList;
-    private ConfigReader configReader;
-    private SiddhiAppContext siddhiAppContext;
     private final AttributeConverter attributeConverter = new AttributeConverter();
     private final JsonParser parser = new JsonParser();
 
@@ -77,20 +70,7 @@ public class P4TrptSourceMapper extends SourceMapper {
     public void init(StreamDefinition streamDefinition, OptionHolder optionHolder,
                      List<AttributeMapping> attributeMappingList, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
-        this.streamDefinition = streamDefinition.clone();
-        this.optionHolder = optionHolder;
         this.attributeMappingList = attributeMappingList;
-        this.configReader = configReader;
-        this.siddhiAppContext = siddhiAppContext;
-    }
-
-    private List<AttributeMapping> getAttrMappings() {
-        final List<AttributeMapping> attrMappings = new ArrayList<>();
-        int pos = 0;
-        attrMappings.add(new AttributeMapping("domainId", pos++, "telemRptHdr.domainId", Attribute.Type.INT));
-        attrMappings.add(new AttributeMapping("hardwareId", pos++, "telemRptHdr.hardwareId", Attribute.Type.INT));
-        attrMappings.add(new AttributeMapping("inType", pos++, "telemRptHdr.inType", Attribute.Type.INT));
-        return attrMappings;
     }
 
     /**
@@ -112,9 +92,9 @@ public class P4TrptSourceMapper extends SourceMapper {
      */
     @Override
     protected void mapAndProcess(Object eventObject, InputEventHandler inputEventHandler)
-            throws MappingFailedException {
+            throws InterruptedException {
         log.debug("Event object class - " + eventObject.getClass().getName());
-        log.debug("Event values - " + eventObject.toString());
+        log.debug("Event values - " + eventObject);
 
         final JsonObject trptJson;
 
@@ -128,7 +108,7 @@ public class P4TrptSourceMapper extends SourceMapper {
             trptJson = telemetryReport.toJson();
         } else if (eventObject instanceof String) {
             String eventString = (String) eventObject;
-            eventString = eventString.substring(eventString.indexOf(':') + 1, eventString.length());
+            eventString = eventString.substring(eventString.indexOf(':') + 1);
             trptJson = (JsonObject) parser.parse(eventString);
         } else {
             throw new RuntimeException("Invalid object, cannot continue to process");
@@ -154,11 +134,11 @@ public class P4TrptSourceMapper extends SourceMapper {
     }
 
     private Object extractField(final JsonObject jsonObject, final AttributeMapping attrMapping)
-            throws MappingFailedException {
+            throws InterruptedException {
         if (jsonObject == null) {
-            throw new MappingFailedException("JSON element is null");
+            throw new InterruptedException("JSON element is null");
         }
-        log.debug("Extracting jsonObject - " + jsonObject.toString());
+        log.debug("Extracting jsonObject - " + jsonObject);
         log.debug("Attribute mapping - " + attrMapping.getMapping());
         if (attrMapping.getMapping().equals("jsonString")) {
             return jsonObject;
@@ -169,7 +149,7 @@ public class P4TrptSourceMapper extends SourceMapper {
             if (i < tokens.length - 1) {
                 thisElem = thisElem.getAsJsonObject(tokens[i]);
                 if (thisElem == null) {
-                    throw new MappingFailedException(
+                    throw new InterruptedException(
                             "JSON element not found - " + tokens[i] + " for mapping - " + attrMapping.getMapping());
                 }
             } else {
@@ -177,17 +157,17 @@ public class P4TrptSourceMapper extends SourceMapper {
                 try {
                     contents = thisElem.get(tokens[i]).toString().replaceAll("\"", "");
                 } catch (NullPointerException npe) {
-                    throw new MappingFailedException(npe);
+                    throw new InterruptedException(npe.getMessage());
                 }
                 final Object outObj = attributeConverter.getPropertyValue(contents, attrMapping.getType());
                 if (outObj == null) {
-                    throw new MappingFailedException(
+                    throw new InterruptedException(
                             "JSON element not found - " + tokens[i] + " for mapping - " + attrMapping.getMapping());
                 }
                 return outObj;
             }
         }
-        throw new MappingFailedException("Could locate field denoted by - " + attrMapping.getMapping());
+        throw new InterruptedException("Could locate field denoted by - " + attrMapping.getMapping());
     }
 
     /**
