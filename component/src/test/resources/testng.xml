@@ -5,18 +5,18 @@
         <packages>
             <package name="io.siddhi.extension.map.p4.trpt.*"></package>
         </packages>
-<!--        <classes>-->
-<!--            <class name="io.siddhi.extension.map.p4.trpt.TelemetryReportJunitTests"></class>-->
-<!--        </classes>-->
+        <classes>
+            <class name="io.siddhi.extension.map.p4.trpt.TelemetryReportJunitTests"></class>
+        </classes>
     </test>
     <test name="Siddhi-map-p4-trpt-tests" enabled="true" parallel="false">
-<!--        <packages>-->
-<!--            <package name="io.siddhi.extension.map.p4.trpt.sourcemapper.*"></package>-->
-<!--        </packages>-->
+        <packages>
+            <package name="io.siddhi.extension.map.p4.trpt.sourcemapper.*"></package>
+        </packages>
         <classes>
-<!--            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceKafkaSinkTelemetryReportTestCase"/>-->
-            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceToKafkaSourceTelemetryReportTestCase"/>
-            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.SimpleDDoSAlertTestCase"/>
+<!--            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceIMSinkTelemetryReportTestCase"/>-->
+<!--            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.UDPSourceToIMSourceTelemetryReportTestCase"/>-->
+<!--            <class name="io.siddhi.extension.map.p4.trpt.sourcemapper.SimpleDDoSAlertTestCase"/>-->
         </classes>
     </test>
 </suite>

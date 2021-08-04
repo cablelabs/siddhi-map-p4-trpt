@@ -19,14 +19,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 import io.siddhi.core.SiddhiAppRuntime;
 import io.siddhi.core.SiddhiManager;
+import io.siddhi.core.util.transport.InMemoryBroker;
 import io.siddhi.extension.map.p4.TestTelemetryReports;
 import io.siddhi.extension.map.p4.trpt.TelemetryReport;
 import org.apache.commons.io.IOUtils;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -37,14 +35,11 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -52,36 +47,67 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * Tests for the UDP Source extension with the p4-trpt mapper to ensure that the events get sent out to Kafka with
- * "json" mapping and received by the kafka source with "json" mapping.
+ * Tests for the UDP Source extension with the p4-trpt mapper to ensure that the events get sent out to inMemory with
+ * "p4-trpt" mapping and received by the inMemory source with "p4-trpt" mapping.
  */
 public class SimpleDDoSAlertTestCase {
     // If you will know about this related testcase,
     //refer https://github.com/siddhi-io/siddhi-io-file/blob/master/component/src/test
 
-    private static final Logger log = Logger.getLogger(UDPSourceToKafkaSourceTelemetryReportTestCase.class);
-
-    private static final String kafkaServer = "localhost:9092";
+    private static final Logger log = Logger.getLogger(UDPSourceToIMSourceTelemetryReportTestCase.class);
 
     private SiddhiAppRuntime srcUdpSiddhiAppRuntime;
-    private SiddhiAppRuntime kafkaIngressSiddhiAppRuntime;
-    private String testTopic;
-    private HttpServer httpServer;
-    private TestHttpHandler handler;
+    private SiddhiAppRuntime ingressSiddhiAppRuntime;
+    private String packetTopic;
+    private String alertTopic;
+    private InMemoryBroker.Subscriber packetBrokerSubscriber;
+    private InMemoryBroker.Subscriber alertBrokerSubscriber;
+    private List<Object> packetEvents;
+    private List<Object> alertEvents;
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    public void setUp() {
         log.info("In setUp()");
-        testTopic = UUID.randomUUID().toString();
-        httpServer = HttpServer.create(new InetSocketAddress(5005), 0);
-        handler = new TestHttpHandler();
-        httpServer.createContext("/attack", handler);
-        httpServer.setExecutor(Executors.newFixedThreadPool(1));
-        httpServer.start();
+        packetTopic = UUID.randomUUID().toString();
+        alertTopic = UUID.randomUUID().toString();
+        packetEvents = new ArrayList<>();
+        alertEvents = new ArrayList<>();
+
+        packetBrokerSubscriber = new InMemoryBroker.Subscriber() {
+            @Override
+            public void onMessage(Object o) {
+                log.info("packet subscriber onMessage() - " + o);
+                if (o instanceof String) {
+                    packetEvents.add((String) o);
+                }
+            }
+
+            @Override
+            public String getTopic() {
+                return packetTopic;
+            }
+        };
+        InMemoryBroker.subscribe(packetBrokerSubscriber);
+
+        alertBrokerSubscriber = new InMemoryBroker.Subscriber() {
+            @Override
+            public void onMessage(Object o) {
+                log.info("alert subscriber onMessage() - " + o);
+                if (o instanceof String) {
+                    alertEvents.add((String) o);
+                }
+            }
+
+            @Override
+            public String getTopic() {
+                return alertTopic;
+            }
+        };
+        InMemoryBroker.subscribe(alertBrokerSubscriber);
 
         final SiddhiManager siddhiManager = new SiddhiManager();
         createSrcUdpAppRuntime(siddhiManager);
-        createKafkaIngressAppRuntime(siddhiManager);
+        createIMIngressAppRuntime(siddhiManager);
     }
 
     @AfterMethod
@@ -89,25 +115,19 @@ public class SimpleDDoSAlertTestCase {
         log.info("In tearDown()");
         try {
             srcUdpSiddhiAppRuntime.shutdown();
-            kafkaIngressSiddhiAppRuntime.shutdown();
+            ingressSiddhiAppRuntime.shutdown();
+            log.info("Shutdown Siddhi runtimes");
         } finally {
-            // Delete topic
-            final Properties conf = new Properties();
-            conf.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
-            conf.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "5000");
-            final AdminClient client = AdminClient.create(conf);
-            log.info("Deleting testTopic - " + testTopic);
-            client.deleteTopics(Collections.singletonList(testTopic));
-            client.close();
-            httpServer.stop(0);
+            InMemoryBroker.unsubscribe(packetBrokerSubscriber);
+            InMemoryBroker.unsubscribe(alertBrokerSubscriber);
         }
 
-        log.info("Siddhi App Runtime down");
+        log.info("Test has been torn down");
     }
 
     /**
      * Tests to ensure that UDP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out and received
-     * back via Kafka.
+     * back via the inMemory source.
      */
     @Test
     public void testTelemetryReportUdp4() {
@@ -123,7 +143,7 @@ public class SimpleDDoSAlertTestCase {
 
     /**
      * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out and received
-     * back via Kafka.
+     * back via inMemory source.
      */
     @Test
     public void testTelemetryReportTcp4() {
@@ -139,7 +159,7 @@ public class SimpleDDoSAlertTestCase {
 
     /**
      * Tests to ensure that UDP IPv6 two hop Telemetry Report packets can be converted to JSON, sent out and received
-     * back via Kafka.
+     * back via inMemory source.
      */
     @Test
     public void testTelemetryReportUdp6() {
@@ -155,7 +175,7 @@ public class SimpleDDoSAlertTestCase {
 
     /**
      * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON, sent out and received
-     * back via Kafka.
+     * back via inMemory source.
      */
     @Test
     public void testTelemetryReportTcp6() {
@@ -208,24 +228,21 @@ public class SimpleDDoSAlertTestCase {
             }
         }
 
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            log.error(e);
-        }
+        log.info("Validating test results");
         // TODO - Determine the expected count based on the dimension count and frequency
         // TODO - Determine why sometimes get one less than actually expected
         Assert.assertTrue(validateResponsesWithDimension(dimensions.get(0)) >= 4,
                 "dimensions.get(0) - " + dimensions.get(0)); // should always be 6
         Assert.assertEquals(validateResponsesWithDimension(dimensions.get(1)), 0);
         Assert.assertTrue(validateResponsesWithDimension(dimensions.get(2)) >= 3);
+        log.info("Completed validation");
     }
 
     private int validateResponsesWithDimension(final TrptTestUdpSendDims dimension) {
         final JsonParser parser = new JsonParser();
         int recordsFound = 0;
-        for (final String response : handler.responses) {
-            final JsonObject bodyJson = (JsonObject) parser.parse(response);
+        for (final Object response : alertEvents) {
+            final JsonObject bodyJson = (JsonObject) parser.parse((String) response);
             final JsonObject eventJson = bodyJson.getAsJsonObject("event");
             if (dimension.origMac.equals(eventJson.get("origMac").getAsString().replaceAll("\"", ""))) {
                 try {
@@ -234,7 +251,7 @@ public class SimpleDDoSAlertTestCase {
                     final InetAddress dimDstIp = InetAddress.getByName(dimension.dstAddr);
                     Assert.assertTrue(eventDstIp.equals(dimDstIp));
                 } catch (UnknownHostException e) {
-                    Assert.fail("Unexpected excepton", e);
+                    Assert.fail("Unexpected exception", e);
                 }
 
                 Assert.assertEquals(eventJson.get("dstPort").getAsLong(), dimension.dstPort);
@@ -246,22 +263,21 @@ public class SimpleDDoSAlertTestCase {
     }
 
     /**
-     * Method responsible for starting the kafka source Siddhi script with "json" mapper.
+     * Method responsible for starting the inMemory source Siddhi script with "json" mapper.
      * TODO - Properly define trptJsonStream and write one DDoS query
      * TODO - Add HTTP sink for making web service call to mock SDN controller
      * @param siddhiManager - the Siddhi manager to leverage
      */
-    private void createKafkaIngressAppRuntime(final SiddhiManager siddhiManager) {
+    private void createIMIngressAppRuntime(final SiddhiManager siddhiManager) {
         final String siddhiScriptStr = String.format(
-            "@app:name('Kafka-Source-JSON')\n" +
-            "@source(type='kafka', topic.list='%s', bootstrap.servers='%s', group.id='test',\n" +
-                "\tthreading.option='single.thread',\n" +
+            "@App:name('IMSourceJSON')\n" +
+            "@source(type='inMemory', topic='%s',\n" +
                 "\t@map(type='p4-trpt',\n" +
                     "\t\t@attributes(origMac='intHdr.mdStackHdr.origMac', ipVer='ipHdr.version',\n" +
                         "\t\t\tdstAddr='ipHdr.dstAddr', dstPort='protoHdr.dstPort')))\n" +
             "define stream trptJsonStream (origMac string, ipVer int, dstAddr string, dstPort long);\n" +
-            "@sink(type='http', publisher.url='http://localhost:5005/attack', method='POST',\n" +
-                "\theaders='trp:headers', @map(type='json'))\n" +
+            "@sink(type='inMemory', topic='%s',\n" +
+                "\t@map(type='json'))\n" +
             "define stream attackStream (origMac string, ipVer int, dstAddr string, dstPort long, count long);\n" +
             "@info(name = 'trptJsonQuery')\n" +
                 "\tfrom trptJsonStream#window.time(1 sec)\n" +
@@ -269,25 +285,25 @@ public class SimpleDDoSAlertTestCase {
                 "\tgroup by origMac, dstAddr, dstPort\n" +
                 "\thaving count == 100 or count == 200 or count == 300 or count == 400\n" +
                 "\tinsert into attackStream;\n",
-            testTopic, kafkaServer);
-        log.info("Kafka-Source-JSON Siddhi script \n" + siddhiScriptStr);
-        kafkaIngressSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(siddhiScriptStr);
-        kafkaIngressSiddhiAppRuntime.start();
+                packetTopic, alertTopic);
+        log.info("IM-Source-JSON Siddhi script \n" + siddhiScriptStr);
+        ingressSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(siddhiScriptStr);
+        ingressSiddhiAppRuntime.start();
     }
 
     /**
-     * Method responsible for starting the UDP source siddhi script with the "p4-trpt" mapper and kafka sink with the
-     * "json" mapper.
+     * Method responsible for starting the UDP source siddhi script with the "p4-trpt" mapper and in-memory sink with
+     * the "json" mapper.
      * @param siddhiManager - the Siddhi manager to leverage
      */
     private void createSrcUdpAppRuntime(final SiddhiManager siddhiManager) {
         final String udpSourceDefinition = String.format(
-            "@app:name('UDP-Source-TRPT')\n" +
+            "@App:name('UDPSourceTRPT')\n" +
                 "@source(type='udp', listen.port='5556', @map(type='p4-trpt',\n" +
                     "\t@attributes(in_type='telemRptHdr.inType', full_json='jsonString')))\n" +
                 "define stream typeStream (in_type int, full_json object);\n\n" +
 
-                "@sink(type='kafka', topic='%1$s', bootstrap.servers='%2$s', is.binary.message = 'false',\n" +
+                "@sink(type='inMemory', topic='%1$s',\n" +
                     "\t@map(type='text'))\n" +
                 "define stream trptPacket (full_json OBJECT);\n\n" +
 
@@ -295,7 +311,7 @@ public class SimpleDDoSAlertTestCase {
                     "\tfrom typeStream[in_type != 2]\n" +
                     "\tselect full_json\n" +
                     "\tinsert into trptPacket;",
-                testTopic, kafkaServer);
+                packetTopic);
         log.info("UDP-Source-TRPT Siddhi script \n" + udpSourceDefinition);
         srcUdpSiddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(udpSourceDefinition);
         srcUdpSiddhiAppRuntime.start();
