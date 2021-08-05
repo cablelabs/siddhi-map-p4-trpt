@@ -15,14 +15,11 @@
 
 package io.siddhi.extension.map.p4;
 
-import com.sun.net.httpserver.HttpServer;
 import io.siddhi.core.SiddhiAppRuntime;
 import io.siddhi.core.SiddhiManager;
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -37,7 +34,6 @@ import java.util.stream.Stream;
 public class StartSiddhiRuntime {
     private static final Logger log = Logger.getLogger(StartSiddhiRuntime.class);
 
-    private HttpServer httpServer;
     private final SiddhiManager siddhiManager;
     private final List<String> scriptFiles;
     private final List<SiddhiAppRuntime> runtimes;
@@ -47,7 +43,6 @@ public class StartSiddhiRuntime {
      * @param scriptFiles - the list of Siddhi script files to deploy
      */
     public StartSiddhiRuntime(final List<String> scriptFiles) {
-        this.httpServer = null;
         this.siddhiManager = new SiddhiManager();
         this.scriptFiles = new ArrayList<>(scriptFiles);
         this.runtimes = new ArrayList<>(scriptFiles.size());
@@ -58,11 +53,6 @@ public class StartSiddhiRuntime {
      * @throws IOException - when a file cannot be read
      */
     public void start() throws IOException {
-        this.httpServer = HttpServer.create(new InetSocketAddress(5005), 0);
-        this.httpServer.createContext("/attack", exchange -> log.info(
-                "Attack received - " + IOUtils.toString(
-                exchange.getRequestBody(), StandardCharsets.UTF_8)));
-
         for (final String scriptFile : this.scriptFiles) {
             final String script = getFileContents(scriptFile);
             this.runtimes.add(deployScript(script));
@@ -93,7 +83,6 @@ public class StartSiddhiRuntime {
             runtime.shutdown();
         }
         siddhiManager.shutdown();
-        this.httpServer.stop(0);
     }
 
     /**

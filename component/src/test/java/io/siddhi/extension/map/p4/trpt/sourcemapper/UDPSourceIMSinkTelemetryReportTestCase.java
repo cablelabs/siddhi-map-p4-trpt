@@ -23,11 +23,10 @@ import io.siddhi.core.SiddhiManager;
 import io.siddhi.core.event.Event;
 import io.siddhi.core.query.output.callback.QueryCallback;
 import io.siddhi.core.util.EventPrinter;
+import io.siddhi.core.util.transport.InMemoryBroker;
 import io.siddhi.extension.map.p4.TestTelemetryReports;
 import io.siddhi.extension.map.p4.trpt.TelemetryReport;
 import io.siddhi.extension.map.p4.trpt.TelemetryReportHeader;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -40,52 +39,89 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
-import java.util.Properties;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 /**
- * Tests for the UDP Source extension with the p4-trpt mapper to ensure that the events get sent out to Kafka.
+ * Tests for the UDP Source extension with the p4-trpt mapper to ensure that the events get sent to the inMemory sink.
  * This test case sends mock Telemetry report UDP packets to this UDP source Siddhi extension and ensures each of the
  * resulting JSON documents contains the expected values.
  */
-public class UDPSourceKafkaSinkTelemetryReportTestCase {
+public class UDPSourceIMSinkTelemetryReportTestCase {
     // If you will know about this related testcase,
     //refer https://github.com/siddhi-io/siddhi-io-file/blob/master/component/src/test
 
-    private static final Logger log = Logger.getLogger(UDPSourceKafkaSinkTelemetryReportTestCase.class);
+    private static final Logger log = Logger.getLogger(UDPSourceIMSinkTelemetryReportTestCase.class);
     private SiddhiAppRuntime siddhiAppRuntime;
-    private List<Event[]> packetEvents;
-    private List<Event[]> dropEvents;
+    private Queue<Object> packetEventsSent;
+    private Queue<String> packetJsonEventsRcvd;
+    private Queue<Object> dropEventsSent;
+    private Queue<Object> dropJsonEventsRcvd;
     private String testTopicPkt;
     private String testTopicDrop;
-    private KafkaRunnable trptPktConsumer;
-    private KafkaRunnable trptDropConsumer;
-    private static final String kafkaServer = "localhost:9092";
+    private InMemoryBroker.Subscriber packetSubscriber;
+    private InMemoryBroker.Subscriber dropSubscriber;
 
     @BeforeMethod
     public void setUp() {
         log.info("In setUp()");
-        packetEvents = new ArrayList<>();
-        dropEvents = new ArrayList<>();
+        packetEventsSent = new ConcurrentLinkedQueue<>();
+        packetJsonEventsRcvd = new ConcurrentLinkedQueue<>();
+        dropEventsSent = new ConcurrentLinkedQueue<>();
+        dropJsonEventsRcvd = new ConcurrentLinkedQueue<>();
         testTopicPkt = UUID.randomUUID().toString();
         testTopicDrop = UUID.randomUUID().toString();
+        packetSubscriber = new InMemoryBroker.Subscriber() {
+            @Override
+            public void onMessage(Object o) {
+                log.info("packet subscriber onMessage() - " + o);
+                if (o instanceof String) {
+                    packetJsonEventsRcvd.add((String) o);
+                } else {
+                    packetEventsSent.add(o);
+                }
+            }
+
+            @Override
+            public String getTopic() {
+                return testTopicPkt;
+            }
+        };
+
+        dropSubscriber = new InMemoryBroker.Subscriber() {
+            @Override
+            public void onMessage(Object o) {
+                log.info("drop subscriber onMessage() - " + o);
+                if (o instanceof String) {
+                    dropJsonEventsRcvd.add((String) o);
+                } else {
+                    dropEventsSent.add(o);
+                }
+            }
+
+            @Override
+            public String getTopic() {
+                return testTopicDrop;
+            }
+        };
+
+        InMemoryBroker.subscribe(packetSubscriber);
+        InMemoryBroker.subscribe(dropSubscriber);
 
         final String inStreamDefinition = String.format(
-                "@app:name('Kafka-Sink-TRPT')\n" +
+                "@App:name('IMSinkTRPT')\n" +
                 "@source(type='udp', listen.port='5556', @map(type='p4-trpt',\n" +
                         "\t@attributes(in_type='telemRptHdr.inType', full_json='jsonString')))\n" +
                 "define stream typeStream (in_type int, full_json object);\n\n" +
 
-                "@sink(type='kafka', topic='%s', bootstrap.servers='%s', is.binary.message = 'false',\n" +
+                "@sink(type='inMemory', topic='%s',\n" +
                     "\t@map(type='text'))\n" +
                 "define stream trptPacket (full_json OBJECT);\n\n" +
 
-                "@sink(type='kafka', topic='%s', bootstrap.servers='%s', is.binary.message = 'false',\n" +
+                "@sink(type='inMemory', topic='%s',\n" +
                     "\t@map(type='text'))\n" +
                 "define stream dropPacket (full_json OBJECT);\n\n" +
 
@@ -98,7 +134,7 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
                     "\tfrom typeStream[in_type == 2]\n" +
                     "\tselect full_json\n" +
                     "\tinsert into dropPacket;",
-                testTopicPkt, kafkaServer, testTopicDrop, kafkaServer);
+                testTopicPkt, testTopicDrop);
 
         log.info("Siddhi script\n" + inStreamDefinition);
         final SiddhiManager siddhiManager = new SiddhiManager();
@@ -107,47 +143,36 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
-                packetEvents.add(inEvents);
+                packetEventsSent.add(inEvents);
             }
         });
         siddhiAppRuntime.addCallback("TrptDrop", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
-                dropEvents.add(inEvents);
+                dropEventsSent.add(inEvents);
             }
         });
         siddhiAppRuntime.start();
-        trptPktConsumer = KafkaRunnable.runConsumer(kafkaServer, testTopicPkt);
-        trptDropConsumer = KafkaRunnable.runConsumer(kafkaServer, testTopicDrop);
     }
 
     @AfterMethod
     public void tearDown() {
         log.info("In tearDown()");
-        trptPktConsumer.stop();
-        trptDropConsumer.stop();
 
         try {
             siddhiAppRuntime.shutdown();
+            InMemoryBroker.unsubscribe(packetSubscriber);
+            InMemoryBroker.unsubscribe(dropSubscriber);
         } finally {
-            // Delete topic
-            final Properties conf = new Properties();
-            conf.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
-            conf.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "5000");
-            final AdminClient client = AdminClient.create(conf);
-            log.info("Deleting testTopic - " + testTopicPkt);
-            client.deleteTopics(Collections.singletonList(testTopicPkt));
-            log.info("Deleting testTopic - " + testTopicDrop);
-            client.deleteTopics(Collections.singletonList(testTopicDrop));
-            client.close();
         }
 
         log.info("Siddhi App Runtime down");
     }
 
     /**
-     * Tests to ensure that UDP IPv4 two hop Telemetry Report packets can be converted to JSON and sent out via Kafka.
+     * Tests to ensure that UDP IPv4 two hop Telemetry Report packets can be converted to JSON and sent out via
+     * the inMemory sink.
      */
     @Test
     public void testTelemetryReportUdp4InterleaveWithDrop() {
@@ -155,7 +180,8 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
     }
 
     /**
-     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON and sent out via Kafka.
+     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON and sent out via
+     * the inMemory sink.
      */
     @Test
     public void testTelemetryReportTcp4InterleaveWithDrop() {
@@ -163,7 +189,8 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
     }
 
     /**
-     * Tests to ensure that UDP IPv6 two hop Telemetry Report packets can be converted to JSON and sent out via Kafka.
+     * Tests to ensure that UDP IPv6 two hop Telemetry Report packets can be converted to JSON and sent out via
+     * the inMemory sink.
      */
     @Test
     public void testTelemetryReportUdp6InterleaveWithDrop() {
@@ -171,7 +198,8 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
     }
 
     /**
-     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON and sent out via Kafka.
+     * Tests to ensure that TCP IPv4 two hop Telemetry Report packets can be converted to JSON and sent out via
+     * the inMemory sink.
      */
     @Test
     public void testTelemetryReportTcp6InterleaveWithDrop() {
@@ -182,22 +210,16 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
         final int numTestEvents = 50;
         try {
             sendTestEvents(trptPktBytes, trptDropBytes, numTestEvents, ipVer);
-
-            // Wait a sec for the processing to complete
-            Thread.sleep(3000);
+            Thread.sleep(100);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         validateTelemetryReports();
 
-        // TODO - Determine why all are not always received by the Kafka Consumer, KafkaRunnable
-        Assert.assertTrue(trptPktConsumer.events.size() <= numTestEvents
-                && trptPktConsumer.events.size() > numTestEvents * .50,
-                "Expected = " + numTestEvents + " Size = " + trptPktConsumer.events.size());
-        Assert.assertTrue(trptDropConsumer.events.size() <= numTestEvents
-                && trptDropConsumer.events.size() > numTestEvents * .50,
-                "Expected = " + numTestEvents + "Size = " + trptDropConsumer.events.size());
+        Assert.assertEquals(packetEventsSent.size(), numTestEvents);
+        Assert.assertEquals(packetJsonEventsRcvd.size(), numTestEvents);
+        Assert.assertEquals(dropEventsSent.size(), numTestEvents);
     }
 
     private void sendTestEvents(final byte[] trptPktBytes, final byte[] trptDropBytes, final int numTestEvents,
@@ -244,9 +266,26 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
     }
 
     private void validateTelemetryReports() {
-        for (final String eventStr : trptPktConsumer.events) {
+        for (final Object eventObj : packetEventsSent) {
+            final JsonObject trptJsonObj;
+            Assert.assertTrue(eventObj instanceof Event[]);
+            final Event[] event = (Event[]) eventObj;
+            trptJsonObj = (JsonObject) event[0].getData(0);
+            Assert.assertNotNull(trptJsonObj);
+            final JsonObject trptHdrJson = trptJsonObj.get("telemRptHdr").getAsJsonObject();
+            Assert.assertNotNull(trptHdrJson);
+            Assert.assertEquals(2, trptHdrJson.get(TelemetryReportHeader.TRPT_VER_KEY).getAsInt());
+            Assert.assertTrue(2 != trptHdrJson.get(TelemetryReportHeader.TRPT_IN_TYPE_KEY).getAsInt());
+            Assert.assertEquals(234, trptHdrJson.get(TelemetryReportHeader.TRPT_NODE_ID_KEY).getAsLong());
+            Assert.assertEquals(21587, trptHdrJson.get(TelemetryReportHeader.TRPT_DOMAIN_ID_KEY).getAsLong());
+        }
+
+        for (final Object eventObj : packetJsonEventsRcvd) {
+            Assert.assertTrue(eventObj instanceof String);
+            final String eventJsonStr = (String) eventObj;
             final JsonParser parser = new JsonParser();
-            final JsonElement jsonElement = parser.parse(eventStr.replaceAll("full_json:", ""));
+            final JsonElement jsonElement = parser.parse(
+                    eventJsonStr.replace("full_json:", ""));
             final JsonObject trptJsonObj = jsonElement.getAsJsonObject();
             Assert.assertNotNull(trptJsonObj);
             final JsonObject trptHdrJson = trptJsonObj.get("telemRptHdr").getAsJsonObject();
@@ -256,9 +295,31 @@ public class UDPSourceKafkaSinkTelemetryReportTestCase {
             Assert.assertEquals(234, trptHdrJson.get(TelemetryReportHeader.TRPT_NODE_ID_KEY).getAsLong());
             Assert.assertEquals(21587, trptHdrJson.get(TelemetryReportHeader.TRPT_DOMAIN_ID_KEY).getAsLong());
         }
-        for (final String eventStr : trptDropConsumer.events) {
+
+        for (final Object eventObj : dropEventsSent) {
+            final JsonObject trptJsonObj;
+            Assert.assertTrue(eventObj instanceof Event[]);
+            final Event[] event = (Event[]) eventObj;
+            trptJsonObj = (JsonObject) event[0].getData(0);
+            Assert.assertNotNull(trptJsonObj);
+            final JsonObject trptHdrJson = trptJsonObj.get("telemRptHdr").getAsJsonObject();
+            Assert.assertNotNull(trptHdrJson);
+            Assert.assertEquals(2, trptHdrJson.get(TelemetryReportHeader.TRPT_VER_KEY).getAsInt());
+            Assert.assertEquals(2, trptHdrJson.get(TelemetryReportHeader.TRPT_IN_TYPE_KEY).getAsInt());
+            Assert.assertEquals(123, trptHdrJson.get(TelemetryReportHeader.TRPT_NODE_ID_KEY).getAsLong());
+            Assert.assertEquals(21587, trptHdrJson.get(TelemetryReportHeader.TRPT_DOMAIN_ID_KEY).getAsLong());
+
+            final JsonObject dropHdrJson = trptJsonObj.get("dropHdr").getAsJsonObject();
+            Assert.assertEquals("6b00dbfc6026a3521bbe0f5d00170000",
+                    dropHdrJson.get(TelemetryReport.DROP_KEY).getAsString());
+        }
+
+        for (final Object eventObj : dropJsonEventsRcvd) {
+            Assert.assertTrue(eventObj instanceof String);
+            final String eventJsonStr = (String) eventObj;
             final JsonParser parser = new JsonParser();
-            final JsonElement jsonElement = parser.parse(eventStr.replaceAll("full_json:", ""));
+            final JsonElement jsonElement = parser.parse(
+                    eventJsonStr.replace("full_json:", ""));
             final JsonObject trptJsonObj = jsonElement.getAsJsonObject();
             Assert.assertNotNull(trptJsonObj);
             final JsonObject trptHdrJson = trptJsonObj.get("telemRptHdr").getAsJsonObject();
