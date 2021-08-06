@@ -1,4 +1,4 @@
-﻿Siddhi Map ${typeOfmapinCamelCase}
+﻿Siddhi Map p4-trpt
 ======================================
 
 The **siddhi-map-p4-trpt extension** is an extension to <a target="_blank" href="https://siddhi.io/">Siddhi</a> that converts
