@@ -1,0 +1,70 @@
+{
+  "telemRptHdr": {
+    "domainId": 21587,
+    "hardwareId": 13,
+    "inType": 4,
+    "nodeId": 234,
+    "rptLen": 10,
+    "seqNo": 1089,
+    "version": 2,
+    "metaLen": 8,
+    "rptType": 0,
+    "d": 0,
+    "q": 1,
+    "f": 0,
+    "i": 1,
+    "repMdBits": "0101010110101010",
+    "mdbBits": "0101010110101010",
+    "mdsBits": "1010101001010101",
+    "varOptMd": "00000000000000000000000000000000"
+  },
+  "intEthHdr": {
+    "dstMac": "00:00:00:00:05:01",
+    "srcMac": "00:00:00:00:01:01",
+    "type": 2048
+  },
+  "ipHdr": {
+    "len": 94,
+    "nextProto": 17,
+    "version": 4,
+    "dstAddr": "192.168.1.10",
+    "srcAddr": "192.168.1.2"
+  },
+  "udpIntHdr": {
+    "srcPort": 0,
+    "dstPort": 555,
+    "len": 74
+  },
+  "intHdr": {
+    "shimHdr": {
+      "type": 1,
+      "npt": 2,
+      "len": 8,
+      "nextProto": 17
+    },
+    "mdHdr": {
+      "version": 2,
+      "d": 0,
+      "e": 0,
+      "m": 0,
+      "mdLen": 1,
+      "remainingHopCount": 9,
+      "instructions": "1000000000000000",
+      "domainId": 21587,
+      "dsInstructions": "1000000000000000",
+      "dsFlags": "0100000000000000"
+    },
+    "mdStackHdr": {
+      "origMac": "00:00:00:00:01:01",
+      "hops": [
+        123,
+        234
+      ]
+    }
+  },
+  "protoHdr": {
+    "srcPort": 6680,
+    "dstPort": 5792
+  },
+  "payload": "68656c6c6f207472616e73706172656e742d7365637572697479"
+}

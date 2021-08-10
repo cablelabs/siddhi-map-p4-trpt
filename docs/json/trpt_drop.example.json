@@ -1,0 +1,27 @@
+{
+  "telemRptHdr": {
+    "domainId": 21587,
+    "hardwareId": 0,
+    "inType": 2,
+    "nodeId": 123,
+    "rptLen": 9,
+    "seqNo": 0,
+    "version": 2,
+    "metaLen": 7,
+    "rptType": 0,
+    "d": 0,
+    "q": 0,
+    "f": 0,
+    "i": 0,
+    "repMdBits": "0000000000000001",
+    "mdbBits": "0000000000000000",
+    "mdsBits": "0000000000000000",
+    "varOptMd": "00000000000011110000000000000000"
+  },
+  "dropHdr": {
+    "timestamp": 1624470281,
+    "dropKey": "6b00dbfc6026a3521bbe0f5d00170000",
+    "dropCount": 0
+  },
+  "payload": "7470732064726f70207265706f7274"
+}

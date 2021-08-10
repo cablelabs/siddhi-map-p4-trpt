@@ -1,0 +1,276 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "telemRptHdr": {
+      "type": "object",
+      "properties": {
+        "domainId": {
+          "type": "integer"
+        },
+        "hardwareId": {
+          "type": "integer"
+        },
+        "inType": {
+          "type": "integer"
+        },
+        "nodeId": {
+          "type": "integer"
+        },
+        "rptLen": {
+          "type": "integer"
+        },
+        "seqNo": {
+          "type": "integer"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "metaLen": {
+          "type": "integer"
+        },
+        "rptType": {
+          "type": "integer"
+        },
+        "d": {
+          "type": "integer"
+        },
+        "q": {
+          "type": "integer"
+        },
+        "f": {
+          "type": "integer"
+        },
+        "i": {
+          "type": "integer"
+        },
+        "repMdBits": {
+          "type": "string"
+        },
+        "mdbBits": {
+          "type": "string"
+        },
+        "mdsBits": {
+          "type": "string"
+        },
+        "varOptMd": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "domainId",
+        "hardwareId",
+        "inType",
+        "nodeId",
+        "rptLen",
+        "seqNo",
+        "version",
+        "metaLen",
+        "rptType",
+        "d",
+        "q",
+        "f",
+        "i",
+        "repMdBits",
+        "mdbBits",
+        "mdsBits",
+        "varOptMd"
+      ]
+    },
+    "intEthHdr": {
+      "type": "object",
+      "properties": {
+        "dstMac": {
+          "type": "string"
+        },
+        "srcMac": {
+          "type": "string"
+        },
+        "type": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dstMac",
+        "srcMac",
+        "type"
+      ]
+    },
+    "ipHdr": {
+      "type": "object",
+      "properties": {
+        "len": {
+          "type": "integer"
+        },
+        "nextProto": {
+          "type": "integer"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "dstAddr": {
+          "type": "string"
+        },
+        "srcAddr": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "len",
+        "nextProto",
+        "version",
+        "dstAddr",
+        "srcAddr"
+      ]
+    },
+    "udpIntHdr": {
+      "type": "object",
+      "properties": {
+        "srcPort": {
+          "type": "integer"
+        },
+        "dstPort": {
+          "type": "integer"
+        },
+        "len": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "srcPort",
+        "dstPort",
+        "len"
+      ]
+    },
+    "intHdr": {
+      "type": "object",
+      "properties": {
+        "shimHdr": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "integer"
+            },
+            "npt": {
+              "type": "integer"
+            },
+            "len": {
+              "type": "integer"
+            },
+            "nextProto": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type",
+            "npt",
+            "len",
+            "nextProto"
+          ]
+        },
+        "mdHdr": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "integer"
+            },
+            "d": {
+              "type": "integer"
+            },
+            "e": {
+              "type": "integer"
+            },
+            "m": {
+              "type": "integer"
+            },
+            "mdLen": {
+              "type": "integer"
+            },
+            "remainingHopCount": {
+              "type": "integer"
+            },
+            "instructions": {
+              "type": "string"
+            },
+            "domainId": {
+              "type": "integer"
+            },
+            "dsInstructions": {
+              "type": "string"
+            },
+            "dsFlags": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "version",
+            "d",
+            "e",
+            "m",
+            "mdLen",
+            "remainingHopCount",
+            "instructions",
+            "domainId",
+            "dsInstructions",
+            "dsFlags"
+          ]
+        },
+        "mdStackHdr": {
+          "type": "object",
+          "properties": {
+            "origMac": {
+              "type": "string"
+            },
+            "hops": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          "required": [
+            "origMac",
+            "hops"
+          ]
+        }
+      },
+      "required": [
+        "shimHdr",
+        "mdHdr",
+        "mdStackHdr"
+      ]
+    },
+    "protoHdr": {
+      "type": "object",
+      "properties": {
+        "srcPort": {
+          "type": "integer"
+        },
+        "dstPort": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "srcPort",
+        "dstPort"
+      ]
+    },
+    "payload": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "telemRptHdr",
+    "intEthHdr",
+    "ipHdr",
+    "udpIntHdr",
+    "intHdr",
+    "protoHdr",
+    "payload"
+  ]
+}

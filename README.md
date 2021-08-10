@@ -43,6 +43,13 @@ to the component's pom.xml file.
 
 * p4-trpt (Source Mapper) - This extension is capable of parsing and mapping a byte array or JSON string representation
   of a Telemetry Report. 
+
+## JSON Schemas
+Please see the schemas for the currently supported output formats
+* [Packet Telemetry Report](./docs/json/trpt_packet.schema.json) and [example](./docs/json/trpt_packet.example.json)
+  from which the schema was generated
+* [Drop Telemetry Report](./docs/json/trpt_drop.schema.json) and [example](./docs/json/trpt_drop.example.json)
+  from which the schema was generated
     
 ## Dependencies 
 
