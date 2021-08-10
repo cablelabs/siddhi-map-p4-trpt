@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "telemRptHdr": {
+      "type": "object",
+      "properties": {
+        "domainId": {
+          "type": "integer"
+        },
+        "hardwareId": {
+          "type": "integer"
+        },
+        "inType": {
+          "type": "integer"
+        },
+        "nodeId": {
+          "type": "integer"
+        },
+        "rptLen": {
+          "type": "integer"
+        },
+        "seqNo": {
+          "type": "integer"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "metaLen": {
+          "type": "integer"
+        },
+        "rptType": {
+          "type": "integer"
+        },
+        "d": {
+          "type": "integer"
+        },
+        "q": {
+          "type": "integer"
+        },
+        "f": {
+          "type": "integer"
+        },
+        "i": {
+          "type": "integer"
+        },
+        "repMdBits": {
+          "type": "string"
+        },
+        "mdbBits": {
+          "type": "string"
+        },
+        "mdsBits": {
+          "type": "string"
+        },
+        "varOptMd": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "domainId",
+        "hardwareId",
+        "inType",
+        "nodeId",
+        "rptLen",
+        "seqNo",
+        "version",
+        "metaLen",
+        "rptType",
+        "d",
+        "q",
+        "f",
+        "i",
+        "repMdBits",
+        "mdbBits",
+        "mdsBits",
+        "varOptMd"
+      ]
+    },
+    "dropHdr": {
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "integer"
+        },
+        "dropKey": {
+          "type": "string"
+        },
+        "dropCount": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "timestamp",
+        "dropKey",
+        "dropCount"
+      ]
+    },
+    "payload": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "telemRptHdr",
+    "dropHdr",
+    "payload"
+  ]
+}
