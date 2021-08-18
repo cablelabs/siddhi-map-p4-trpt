@@ -1,21 +1,60 @@
-﻿Siddhi Map p4-trpt
+Siddhi Map P4 Telemetry Report
 ======================================
 
 The **siddhi-map-p4-trpt extension** is an extension to <a target="_blank" href="https://siddhi.io/">Siddhi</a> that converts
-A byte array from the payload of a UDP packets representing a P4 Telemetry Report into a TelemetryReport object 
+a byte array from the payload of a UDP packets representing a P4 Telemetry Report into a TelemetryReport object.
+This extension is also capable of mapping each field within Telemetry Report JSON string objects as well.
+the field 
 
 For information on <a target="_blank" href="https://siddhi.io/">Siddhi</a> and it's features refer <a target="_blank" href="https://siddhi.io/redirect/docs.html">Siddhi Documentation</a>. 
 
-## Download
+## Obtain bundle via Maven
 
-Versions with group id `io.siddhi.extension.map.*` from <a target="_blank" href="https://mvnrepository.com/artifact/io.siddhi.extension.map.p4.trpt/siddhi-map-p4-trpt/">here</a>.
+Other Siddhi I/O extensions can include this project into their build by adding the following repository and dependency
+to the component's pom.xml file.
+
+```xml
+    <repositories>
+        ...
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        ...
+    </repositories>
+```
+
+```xml
+    <dependencies>
+        ...
+        <dependency>
+            <groupId>com.github.cablelabs</groupId>
+            <artifactId>siddhi-map-p4-trpt</artifactId>
+            <version>master-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        ...
+    </dependencies>
+```
 
 ## Latest API Docs
 
 ## Features
+
+* p4-trpt (Source Mapper) - This extension is capable of parsing and mapping a byte array or JSON string representation
+  of a Telemetry Report. 
+
+## JSON Schemas
+Please see the schemas for the currently supported output formats
+* [Packet Telemetry Report](./docs/json/trpt_packet.schema.json) and [example](./docs/json/trpt_packet.example.json)
+  from which the schema was generated
+* [Drop Telemetry Report](./docs/json/trpt_drop.schema.json) and [example](./docs/json/trpt_drop.example.json)
+  from which the schema was generated
     
 ## Dependencies 
-   
+
+There are no other dependencies needed for this extension.
+
 ## Installation
    
 For installing this extension on various Siddhi execution environments refer Siddhi documentation section on <a target="_blank" href="https://siddhi.io/redirect/add-extensions.html">adding extensions</a>.
